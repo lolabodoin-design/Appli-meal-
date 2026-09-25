@@ -431,6 +431,32 @@ button:active { transform: scale(.97); }
   :root:not([data-theme="light"]) .day-banner.plaisir { background: #3a2e14; color: #f0c56b; }
 }
 
+/* ---------- Profils enregistrés, variantes, aliment libre */
+.person.saved { gap: 10px; }
+.person-title { font-family: var(--font-title); font-size: 1.4rem; font-weight: 600; color: var(--pc); }
+.person-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.person-tags span { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; font-size: .82rem; font-weight: 700; }
+.person-macros { font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.person-macros b { font-family: var(--font-title); font-size: 1.3rem; color: var(--text); }
+.person-macros .mp { color: var(--p); } .person-macros .mc { color: var(--c); } .person-macros .mf { color: var(--f); }
+.regime-desc { margin-top: -4px; }
+.variant { margin-top: 8px; padding: 8px 10px; border-left: 3px solid var(--berry); background: var(--surface-2); border-radius: 0 12px 12px 0; }
+.variant-label { font-size: .76rem; font-weight: 800; color: var(--muted); }
+.custom-dislike { margin-top: 18px; }
+.custom-row { display: flex; gap: 8px; margin-top: 6px; }
+.custom-row input {
+  flex: 1; min-width: 0; padding: 10px 14px; border: 2px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.custom-row input:focus { outline: none; border-color: var(--leaf); box-shadow: 0 0 0 4px var(--leaf-soft); }
+.custom-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.custom-chip {
+  display: inline-flex; align-items: center; gap: 6px; background: #fdeef0; color: #9a2f45; border-radius: 999px;
+  padding: 4px 6px 4px 12px; font-weight: 800; font-size: .88rem;
+}
+.custom-chip small { font-weight: 600; opacity: .8; }
+.custom-chip.none { background: var(--surface-2); color: var(--muted); }
+.custom-chip button { background: none; padding: 0 6px; font-size: .8rem; color: inherit; }
+
 /* ---------- Budget */
 .budget-row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; margin: 4px 0 10px; font-weight: 800; }
 .budget-row b { font-family: var(--font-title); font-size: 1.2rem; color: var(--leaf-dark); }

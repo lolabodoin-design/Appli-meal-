@@ -84,15 +84,25 @@ const PLAISIR_OPTIONS = [
 const hasIng = (...ids) => r => ids.some(id => r.ingIds.has(id));
 const DISLIKES = {
   poisson:      { icon: '🐟', label: 'Poisson & fruits de mer', test: r => r.tags.has('poisson') },
-  porc:         { icon: '🐷', label: 'Porc', test: r => r.tags.has('porc') },
+  viande:       { icon: '🥩', label: 'Viande', test: r => r.tags.has('viande') },
   tofu:         { icon: '🧊', label: 'Tofu', test: hasIng('tofu') },
-  champignons:  { icon: '🍄', label: 'Champignons', test: hasIng('champi') },
   oeufs:        { icon: '🥚', label: 'Œufs', test: hasIng('oeufs', 'blancoeuf') },
   laitiers:     { icon: '🥛', label: 'Produits laitiers', test: r => r.tags.has('lactose') },
   legumineuses: { icon: '🫘', label: 'Légumineuses', test: hasIng('lentilles', 'poischiches', 'harirouges', 'edamame', 'houmous', 'petitspois') },
-  avocat:       { icon: '🥑', label: 'Avocat', test: hasIng('avocat') },
   whey:         { icon: '🥤', label: 'Protéine en poudre', test: r => r.tags.has('whey') },
 };
+
+// « Pas envie de » libre : un mot tapé par l'utilisateur → ingrédients correspondants
+const normText = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+function ingredientsMatching(term) {
+  const t = normText(term).replace(/(s|x)$/, ''); // « tomates » → « tomate »
+  if (t.length < 3) return [];
+  return Object.keys(INGREDIENTS).filter(id => {
+    const ing = INGREDIENTS[id];
+    return normText(ing.name).includes(t) || normText(ing.search).includes(t) || normText(id).includes(t);
+  });
+}
+const customDislikeIds = () => [...new Set(state.quiz.custom.flatMap(ingredientsMatching))];
 
 // Repas pris dehors : on ne cuisine pas, mais on estime ce qu'il apporte
 // (part des calories de la journée + répartition des macros) pour rééquilibrer le reste
@@ -136,7 +146,8 @@ const PROFILE_OPTIONS = {
 };
 
 function defaultPerson(id, name, profile) {
-  return { id, name, active: true, collation: true, profile, targets: computeNeeds(profile) };
+  // saved = mensurations enregistrées : on affiche alors un résumé au lieu du formulaire
+  return { id, name, active: true, collation: true, regime: 'omnivore', saved: false, profile, targets: computeNeeds(profile) };
 }
 
 const DEFAULT_STATE = {
@@ -144,10 +155,12 @@ const DEFAULT_STATE = {
     defaultPerson('lola', 'Lola', { sexe: 'femme', age: 23, poids: 60, taille: 165, activite: '1.375', objectif: 'maintien' }),
     defaultPerson('barnabe', 'Barnabé', { sexe: 'homme', age: 25, poids: 78, taille: 180, activite: '1.55', objectif: 'maintien' }),
   ],
-  prefs: { regime: 'omnivore', temps: 'normal', budget: 'libre' },
-  quiz: { moods: [], events: {}, lunch: 'maison', dislikes: [], plaisirDay: null },
+  prefs: { temps: 'normal', budget: 'libre' },
+  quiz: { moods: [], events: {}, lunch: 'maison', dislikes: [], custom: [], plaisirDay: null },
   driveUrl: '',
-  // [{ meals: [{ slot, recipeId, scales: { lola: 1.2, barnabe: null } }  (ou { slot, external: 'soiree', scales })] }] × 7
+  // [{ meals: [{ slot, recipeId, variants?: { lola: 'dahl' }, scales: { lola: 1.2, barnabe: 1.5 } }
+  //            (ou { slot, external: 'soiree', scales })] }] × 7
+  // variants : recette propre à une personne quand la recette commune ne convient pas à son régime
   plan: null,
   checked: {},     // ingrédients cochés dans la liste de courses
   products: {},    // produit Open Food Facts choisi pour chaque ingrédient
@@ -182,14 +195,22 @@ function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (saved) {
+      const quiz = { ...base.quiz, ...saved.quiz };
+      quiz.dislikes = quiz.dislikes.filter(k => DISLIKES[k]); // anciennes options retirées
       return {
         ...base, ...saved,
         people: base.people.map(p => {
           const s = (saved.people || []).find(x => x.id === p.id) || {};
-          return { ...p, ...s, profile: { ...p.profile, ...s.profile }, targets: { ...p.targets, ...s.targets } };
+          return {
+            ...p, ...s,
+            active: true,
+            regime: s.regime || saved.prefs?.regime || 'omnivore', // l'ancien régime commun devient celui de chacun
+            profile: { ...p.profile, ...s.profile },
+            targets: { ...p.targets, ...s.targets },
+          };
         }),
         prefs: { ...base.prefs, ...saved.prefs },
-        quiz: { ...base.quiz, ...saved.quiz },
+        quiz,
       };
     }
   } catch { /* stockage indisponible : on repart des valeurs par défaut */ }
@@ -255,8 +276,9 @@ function dayCost(meals, scales) {
   let total = 0;
   meals.forEach((m, i) => {
     if (m.external) return;
-    const c = recipeCost(m.recipe);
-    for (const x of Object.values(scales[i])) if (x != null) total += c * x;
+    for (const [pid, x] of Object.entries(scales[i])) {
+      if (x != null) total += recipeCost(m.variants?.[pid] || m.recipe) * x;
+    }
   });
   return total;
 }
@@ -285,13 +307,16 @@ function externalTotals(kind, person) {
   return { kcal, p: (kcal * split.p) / 4, c: (kcal * split.c) / 4, f: (kcal * split.f) / 9 };
 }
 
+// Recette mangée par une personne : sa variante éventuelle, sinon la recette commune
+const recipeOf = (meal, personId) => RECIPE_BY_ID[meal.variants?.[personId] || meal.recipeId];
+
 // Portion d'une personne pour un repas : quantités arrondies + totaux réels (null si elle n'en mange pas)
 function mealDetail(meal, personId) {
   const scale = meal.scales[personId];
   if (scale == null) return null;
   if (meal.external) return { items: [], totals: externalTotals(meal.external, personById(personId)) };
   const totals = { kcal: 0, p: 0, c: 0, f: 0 };
-  const items = RECIPE_BY_ID[meal.recipeId].ingredients.map(([id, g]) => {
+  const items = recipeOf(meal, personId).ingredients.map(([id, g]) => {
     const ing = INGREDIENTS[id];
     const grams = roundGrams(ing, g * scale);
     const n = nutrition(id);
@@ -350,16 +375,39 @@ function dayTargets(person, d) {
   return { kcal: T.kcal * 0.9, p: T.p, c: T.c * 0.9, f: T.f * 0.8 };
 }
 
-function isAllowed(recipe) {
-  if (!REGIMES[state.prefs.regime].allows(recipe)) return false;
+// Filtres communs au foyer : « pas envie de » du quiz et ruptures au Drive
+function householdAllows(recipe) {
   if (state.unavailable.some(id => recipe.ingIds.has(id))) return false; // en rupture au Drive
-  return !state.quiz.dislikes.some(k => DISLIKES[k]?.test(recipe));
+  if (state.quiz.dislikes.some(k => DISLIKES[k]?.test(recipe))) return false;
+  return !customDislikeIds().some(id => recipe.ingIds.has(id));
 }
 
-function recipePools() {
+// Régime propre à chaque personne
+const personAllows = (recipe, person) => REGIMES[person.regime]?.allows(recipe) ?? true;
+const allowedForAll = recipe => activePeople().every(p => personAllows(recipe, p));
+
+// Recettes possibles par type de repas : pour une personne, ou pour le foyer
+// (= acceptées par au moins une personne ; les autres auront une variante)
+function recipePools(person = null) {
   const pools = { petitdej: [], plat: [], collation: [] };
-  for (const r of RECIPES) if (isAllowed(r)) pools[r.type].push(r);
+  for (const r of RECIPES) {
+    if (!householdAllows(r)) continue;
+    const ok = person ? personAllows(r, person) : activePeople().some(p => personAllows(r, p));
+    if (ok) pools[r.type].push(r);
+  }
   return pools;
+}
+
+// Pour chaque personne qui ne peut pas manger la recette commune, on tire sa variante
+function pickVariants(d, slot, recipe, exclude) {
+  const variants = {};
+  for (const p of activePeople()) {
+    if (!personEats(p, slot) || personAllows(recipe, p)) continue;
+    const v = weightedPick(slotPool(d, slot, recipePools(p)), exclude);
+    variants[p.id] = v;
+    exclude.push(v);
+  }
+  return variants;
 }
 
 // Recettes possibles pour un créneau donné, selon le contexte du jour.
@@ -382,6 +430,7 @@ function slotPool(d, slot, pools) {
 // Plus une recette correspond aux envies, plus elle a de chances d'être tirée
 function recipeWeight(r) {
   let w = 1;
+  if (!allowedForAll(r)) w *= 0.6; // on préfère un peu un plat commun, plus simple à cuisiner
   if (state.quiz.moods.some(m => r.flags.has(m))) w *= 3;
   const cap = budgetCap();
   if (cap && cap <= 120 && r.cher) w *= 0.3;
@@ -471,7 +520,7 @@ function optimizeHousehold(meals, d) {
 
     const idx = meals.map((_, i) => i).filter(i => !meals[i].external && personEats(person, meals[i].slot));
     if (!idx.length) continue;
-    const res = optimizeScales(idx.map(i => meals[i].recipe), idx.map(i => meals[i].slot), T);
+    const res = optimizeScales(idx.map(i => meals[i].variants?.[person.id] || meals[i].recipe), idx.map(i => meals[i].slot), T);
     idx.forEach((i, k) => { scales[i][person.id] = res.scales[k]; });
     err += res.err;
   }
@@ -482,30 +531,68 @@ function optimizeHousehold(meals, d) {
 function varietyPenalty(recipes, usage) {
   return recipes.reduce((sum, r) => {
     const u = usage[r.id] || 0;
-    return sum + u * 0.04 + (u >= 2 ? 0.5 : 0);
+    return sum + u * 0.2 + (u >= 2 ? 0.5 : 0); // on évite de resservir un plat dans la semaine
+  }, 0);
+}
+
+// Équilibre des sources de protéines sur la semaine (viande / poisson / végétal) :
+// chaque plat d'une famille déjà servie coûte un peu plus cher, ce qui alterne les familles
+// (calculé sur les plats communs : les variantes ne comptent pas pour les autres convives)
+const proteinFamily = r => (r.tags.has('viande') ? 'viande' : r.tags.has('poisson') ? 'poisson' : 'vegetal');
+function familyCounts(skipDay = -1, skipMeal = -1) {
+  const count = { viande: 0, poisson: 0, vegetal: 0 };
+  (state.plan || []).forEach((day, d) => day.meals.forEach((m, i) => {
+    if (!m.recipeId || (d === skipDay && (skipMeal === -1 || i === skipMeal))) return;
+    const r = RECIPE_BY_ID[m.recipeId];
+    if (r.type === 'plat') count[proteinFamily(r)]++;
+  }));
+  return count;
+}
+function familyPenalty(recipes, families) {
+  const count = { ...families };
+  return recipes.reduce((sum, r) => {
+    if (r.type !== 'plat') return sum;
+    const f = proteinFamily(r);
+    const pen = 0.03 * count[f];
+    count[f]++;
+    return sum + pen;
   }, 0);
 }
 
 // Repas du plan → format attendu par optimizeHousehold
-const toOptMeals = day => day.meals.map(m => ({ slot: m.slot, external: m.external, recipe: RECIPE_BY_ID[m.recipeId] }));
-const fromOptMeal = (m, scales) => (m.external
-  ? { slot: m.slot, external: m.external, scales }
-  : { slot: m.slot, recipeId: m.recipe.id, scales });
+const mapValues = (obj, fn) => Object.fromEntries(Object.entries(obj || {}).map(([k, v]) => [k, fn(v)]));
+const toOptMeals = day => day.meals.map(m => ({
+  slot: m.slot, external: m.external, recipe: RECIPE_BY_ID[m.recipeId], variants: mapValues(m.variants, id => RECIPE_BY_ID[id]),
+}));
+function fromOptMeal(m, scales) {
+  if (m.external) return { slot: m.slot, external: m.external, scales };
+  const out = { slot: m.slot, recipeId: m.recipe.id, scales };
+  if (m.variants && Object.keys(m.variants).length) out.variants = mapValues(m.variants, r => r.id);
+  return out;
+}
+// Toutes les recettes d'un repas (commune + variantes), pour compter la variété
+const mealRecipeIds = m => (m.recipeId ? [m.recipeId, ...Object.values(m.variants || {})] : []);
 
-function generateDay(d, pools, usage) {
+function generateDay(d, pools, usage, families) {
   const skeleton = daySkeleton(d);
   const slotPools = skeleton.map(s => (s.external ? null : slotPool(d, s.slot, pools)));
   let best = null;
   for (let t = 0; t < TRIES_PER_DAY; t++) {
     const picks = [];
+    const shared = [];
+    let nVariants = 0;
     const meals = skeleton.map((s, i) => {
       if (s.external) return { slot: s.slot, external: s.external };
       const r = weightedPick(slotPools[i], picks);
       picks.push(r);
-      return { slot: s.slot, recipe: r };
+      shared.push(r);
+      const variants = pickVariants(d, s.slot, r, picks);
+      nVariants += Object.keys(variants).length;
+      return { slot: s.slot, recipe: r, variants };
     });
     const { scales, err } = optimizeHousehold(meals, d);
-    const score = err + varietyPenalty(picks, usage) + preferenceScore(picks) + budgetPenalty(dayCost(meals, scales));
+    const score = err + varietyPenalty(picks, usage) + familyPenalty(shared, families) + preferenceScore(picks)
+      + budgetPenalty(dayCost(meals, scales)) + 0.01 * nVariants; // un plat commun, c'est moins de cuisine
     if (!best || score < best.score) best = { score, meals: meals.map((m, i) => fromOptMeal(m, scales[i])) };
   }
   return best.meals;
@@ -514,32 +601,35 @@ function generateDay(d, pools, usage) {
 function usageExcept(skipDay = -1, skipMeal = -1) {
   const usage = {};
   (state.plan || []).forEach((day, d) => day.meals.forEach((m, i) => {
-    if (!m.recipeId || (d === skipDay && (skipMeal === -1 || i === skipMeal))) return;
-    usage[m.recipeId] = (usage[m.recipeId] || 0) + 1;
+    if (d === skipDay && (skipMeal === -1 || i === skipMeal)) return;
+    for (const id of mealRecipeIds(m)) usage[id] = (usage[id] || 0) + 1;
   }));
   return usage;
 }
 
 function canPlan(pools) {
-  if (!activePeople().length) {
-    showNotice('Coche au moins une personne qui mange cette semaine.');
-    return false;
+  for (const p of activePeople()) {
+    const own = recipePools(p);
+    const missing = daySlots().filter(k => personEats(p, k)).map(k => SLOTS[k]).filter(s => own[s.type].length === 0);
+    if (missing.length) {
+      showNotice(`Aucune recette ne convient à ${p.name} pour : ${[...new Set(missing.map(s => s.label))].join(', ')}. Change son régime ou retire un « pas envie de ».`);
+      return false;
+    }
   }
-  const missing = daySlots().map(k => SLOTS[k]).filter(s => pools[s.type].length === 0);
-  if (missing.length) {
-    showNotice(`Aucune recette ne correspond à vos préférences pour : ${missing.map(s => s.label).join(', ')}. Change le régime ou retire un « pas envie de ».`);
-    return false;
-  }
-  return true;
+  return pools.plat.length > 0;
 }
 
 function generateWeek() {
   const pools = recipePools();
   if (!canPlan(pools)) return;
   const usage = {};
+  const families = { viande: 0, poisson: 0, vegetal: 0 };
   state.plan = DAYS.map((_, d) => {
-    const meals = generateDay(d, pools, usage);
-    for (const m of meals) if (m.recipeId) usage[m.recipeId] = (usage[m.recipeId] || 0) + 1;
+    const meals = generateDay(d, pools, usage, families);
+    for (const m of meals) {
+      for (const id of mealRecipeIds(m)) usage[id] = (usage[id] || 0) + 1;
+      if (m.recipeId && RECIPE_BY_ID[m.recipeId].type === 'plat') families[proteinFamily(RECIPE_BY_ID[m.recipeId])]++;
+    }
     return { meals };
   });
   state.checked = {};
@@ -551,7 +641,7 @@ function generateWeek() {
 function regenerateDay(d) {
   const pools = recipePools();
   if (!canPlan(pools)) return;
-  state.plan[d].meals = generateDay(d, pools, usageExcept(d));
+  state.plan[d].meals = generateDay(d, pools, usageExcept(d), familyCounts(d));
   saveState();
   render();
 }
@@ -567,11 +657,13 @@ function swapMeal(d, i) {
   if (!pool.length) return;
 
   const usage = usageExcept(d, i);
+  const families = familyCounts(d, i);
   const base = toOptMeals(day);
   const options = pool.map(r => {
-    const meals = base.map((m, j) => (j === i ? { ...m, recipe: r } : m));
+    const exclude = base.filter((_, j) => j !== i && !base[j].external).map(m => m.recipe);
+    const meals = base.map((m, j) => (j === i ? { ...m, recipe: r, variants: pickVariants(d, m.slot, r, exclude) } : m));
     const { scales, err } = optimizeHousehold(meals, d);
-    return { meals, scales, score: err + varietyPenalty([r], usage) + preferenceScore([r]) + budgetPenalty(dayCost(meals, scales)) };
+    return { meals, scales, score: err + varietyPenalty([r], usage) + familyPenalty([r], families) + preferenceScore([r]) + budgetPenalty(dayCost(meals, scales)) };
   }).sort((a, b) => a.score - b.score);
 
   // On tire au hasard parmi les 3 meilleures options pour varier à chaque clic
@@ -772,7 +864,7 @@ function groupedList() {
 
 function listAsText() {
   const names = activePeople().map(p => p.name).join(' & ');
-  const lines = [`LISTE DE COURSES — Menu de la semaine (${names}, ${REGIMES[state.prefs.regime].label})`, ''];
+  const lines = [`LISTE DE COURSES — Menu de la semaine (${names})`, ''];
   for (const { rayon, items } of groupedList()) {
     lines.push(`== ${rayon.toUpperCase()} ==`);
     for (const { id, ing, g } of items) {
@@ -938,6 +1030,26 @@ function renderExternalMeal(meal) {
     </div>`;
 }
 
+// Tableau des quantités d'une recette pour un groupe de convives (+ total à cuisiner)
+function recipeDetails(recipe, eaters) {
+  const showTotal = eaters.length > 1;
+  const rows = recipe.ingredients.map(([id], k) => {
+    const ing = INGREDIENTS[id];
+    const cells = eaters.map(({ detail }) => `<td>${fmtQty(ing, detail.items[k].g)}</td>`).join('');
+    const total = eaters.reduce((a, { detail }) => a + detail.items[k].g, 0);
+    return `<tr><th scope="row">${esc(ing.name)}</th>${cells}${showTotal ? `<td class="total">${fmtQty(ing, total)}</td>` : ''}</tr>`;
+  }).join('');
+  return `
+    <details>
+      <summary>${esc(recipe.name)}${recipe.anti ? ' <span title="Anti-inflammatoire">🌿</span>' : ''}</summary>
+      <table class="qty-table">
+        <thead><tr><th></th>${eaters.map(({ p }) => `<th>${who(p)}</th>`).join('')}${showTotal ? '<th>À cuisiner</th>' : ''}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p class="steps">${esc(recipe.steps)}</p>
+    </details>`;
+}
+
 function renderMeal(meal, d, i) {
   if (meal.external) return renderExternalMeal(meal);
   const recipe = RECIPE_BY_ID[meal.recipeId];
@@ -949,15 +1061,12 @@ function renderMeal(meal, d, i) {
   const eaters = state.people
     .map(p => ({ p, detail: mealDetail(meal, p.id) }))
     .filter(x => x.detail);
-  const showTotal = eaters.length > 1;
-
-  // Tableau des quantités : une colonne par personne (+ total à cuisiner)
-  const rows = recipe.ingredients.map(([id], k) => {
-    const ing = INGREDIENTS[id];
-    const cells = eaters.map(({ detail }) => `<td>${fmtQty(ing, detail.items[k].g)}</td>`).join('');
-    const total = eaters.reduce((a, { detail }) => a + detail.items[k].g, 0);
-    return `<tr><th scope="row">${esc(ing.name)}</th>${cells}${showTotal ? `<td class="total">${fmtQty(ing, total)}</td>` : ''}</tr>`;
-  }).join('');
+  const common = eaters.filter(({ p }) => !meal.variants?.[p.id]);
+  const variantBlocks = eaters.filter(({ p }) => meal.variants?.[p.id]).map(x => `
+    <div class="variant">
+      <span class="variant-label">🔀 Variante pour ${who(x.p)} · ${esc(REGIMES[x.p.regime].label)}</span>
+      ${recipeDetails(recipeOf(meal, x.p.id), [x])}
+    </div>`).join('');
 
   return `
     <div class="meal">
@@ -965,14 +1074,8 @@ function renderMeal(meal, d, i) {
         <span class="meal-slot">${SLOTS[meal.slot].icon} ${SLOTS[meal.slot].label} · ${recipe.time} min ${tags}</span>
         <button type="button" class="icon-btn" data-swap="${d},${i}" title="Proposer une autre recette">🔄 changer</button>
       </div>
-      <details>
-        <summary>${esc(recipe.name)}${recipe.anti ? ' <span title="Anti-inflammatoire">🌿</span>' : ''}</summary>
-        <table class="qty-table">
-          <thead><tr><th></th>${eaters.map(({ p }) => `<th>${who(p)}</th>`).join('')}${showTotal ? '<th>À cuisiner</th>' : ''}</tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-        <p class="steps">${esc(recipe.steps)}</p>
-      </details>
+      ${common.length ? recipeDetails(recipe, common) : ''}
+      ${variantBlocks}
       ${eaters.map(({ p, detail }) => `<div class="macros">${who(p)} ${macroLine(detail.totals)}</div>`).join('')}
     </div>`;
 }
@@ -1019,7 +1122,7 @@ function renderWeek() {
     </div>
     ${cap && cost > cap ? `<p class="hint warn">Au-dessus de votre budget : régénère la semaine, choisis une tranche plus haute ou le régime végétarien, souvent moins cher.</p>` : ''}`;
   $('#week-summary').innerHTML = `
-    <h3>Moyenne par jour sur la semaine · ${esc(REGIMES[state.prefs.regime].label)}</h3>
+    <h3>Moyenne par jour sur la semaine</h3>
     ${budgetHtml}
     ${activePeople().map(p => {
       const avg = { kcal: 0, p: 0, c: 0, f: 0 };
@@ -1128,7 +1231,7 @@ function quizRecap() {
   const events = Object.entries(q.events).sort().map(([d, k]) => `${EXTERNAL[k].icon} ${EXTERNAL[k].label} ${DAYS[d].toLowerCase()} soir`);
   const lunch = LUNCH_OPTIONS.find(o => o[0] === q.lunch);
   const plaisir = PLAISIR_OPTIONS.find(o => o[0] === String(q.plaisirDay ?? ''));
-  const dislikes = q.dislikes.map(k => `${DISLIKES[k].icon} ${DISLIKES[k].label}`);
+  const dislikes = [...q.dislikes.map(k => `${DISLIKES[k].icon} ${DISLIKES[k].label}`), ...q.custom.map(t => `🚫 ${esc(t)}`)];
   const row = (step, label, value) => `
     <div class="recap-row"><span class="recap-label">${label}</span><span class="recap-value">${value}</span>
       <button type="button" class="link-btn" data-q-nav="goto-${step}">Modifier</button></div>`;
@@ -1170,7 +1273,20 @@ function renderQuiz() {
       <div class="quiz-options">${LUNCH_OPTIONS.map(([k, e, t, sub]) => quizOption('lunch', k, e, t, sub, q.lunch === k)).join('')}</div>`;
   } else if (quizStep === 3) {
     body = `<h3>Pas envie de… cette semaine ?</h3><p class="hint">Les recettes qui en contiennent seront écartées.</p>
-      <div class="quiz-options small">${Object.entries(DISLIKES).map(([k, d]) => quizOption('dislikes', k, d.icon, d.label, '', q.dislikes.includes(k))).join('')}</div>`;
+      <div class="quiz-options small">${Object.entries(DISLIKES).map(([k, d]) => quizOption('dislikes', k, d.icon, d.label, '', q.dislikes.includes(k))).join('')}</div>
+      <div class="custom-dislike">
+        <label class="field-label" for="custom-dislike">✍️ Un autre aliment ?</label>
+        <div class="custom-row">
+          <input type="text" id="custom-dislike" placeholder="ex. brocoli, thon, pois chiches…" maxlength="30" autocomplete="off">
+          <button type="button" class="secondary" data-custom-add>Ajouter</button>
+        </div>
+        <div class="custom-chips">${q.custom.map((term, i) => {
+          const found = ingredientsMatching(term).map(id => INGREDIENTS[id].name);
+          return `<span class="custom-chip ${found.length ? '' : 'none'}" title="${esc(found.join(', ') || 'Aucun ingrédient trouvé dans nos recettes')}">
+            🚫 ${esc(term)} <small>${found.length ? `(${found.length} ingrédient${found.length > 1 ? 's' : ''})` : '(introuvable)'}</small>
+            <button type="button" data-custom-remove="${i}" aria-label="Retirer">✕</button></span>`;
+        }).join('')}</div>
+      </div>`;
   } else if (quizStep === 4) {
     body = `<h3>Un petit plaisir ce week-end ?</h3><p class="hint">Burger maison, pizza, fajitas… version protéinée et toujours calée sur vos macros.</p>
       <div class="quiz-options">${PLAISIR_OPTIONS.map(([k, e, t, sub]) => quizOption('plaisir', k, e, t, sub, String(q.plaisirDay ?? '') === k)).join('')}</div>`;
@@ -1183,7 +1299,26 @@ function renderQuiz() {
     </div>`);
 }
 
+function addCustomDislike() {
+  const input = $('#custom-dislike');
+  const term = input.value.trim();
+  if (!term || state.quiz.custom.some(t => normText(t) === normText(term))) { input.value = ''; return; }
+  state.quiz.custom.push(term);
+  saveState();
+  if (state.plan) showNotice('Vos envies ont changé : clique sur « Régénérer » pour les appliquer au menu.');
+  renderQuiz();
+  $('#custom-dislike').focus();
+}
+
 function onQuizClick(e) {
+  if (e.target.closest('[data-custom-add]')) { addCustomDislike(); return; }
+  const rm = e.target.closest('[data-custom-remove]');
+  if (rm) {
+    state.quiz.custom.splice(Number(rm.dataset.customRemove), 1);
+    saveState();
+    renderQuiz();
+    return;
+  }
   const opt = e.target.closest('[data-q]');
   const nav = e.target.closest('[data-q-nav]');
   const q = state.quiz;
@@ -1218,27 +1353,48 @@ const options = (list, value) => list
 
 const TARGET_LABELS = [['kcal', 'Calories / jour', 'kcal'], ['p', 'Protéines', 'g'], ['c', 'Glucides', 'g'], ['f', 'Lipides', 'g']];
 
-function renderPeopleForms() {
-  $('#people').innerHTML = state.people.map(p => `
-    <div class="person person-${p.id} ${p.active ? '' : 'inactive'}" data-person="${p.id}">
+const labelOf = (list, v) => (list.find(o => String(o[0]) === String(v)) || ['', ''])[1];
+
+// Profil enregistré : simple résumé. Sinon : formulaire complet.
+function personSummary(p) {
+  const T = p.targets;
+  return `
+    <div class="person person-${p.id} saved" data-person="${p.id}">
+      <div class="person-head">
+        <span class="person-title">${esc(p.name)}</span>
+        <button type="button" class="chip-btn" data-edit>✏️ Modifier</button>
+      </div>
+      <div class="person-tags">
+        <span>🎯 ${esc(labelOf(PROFILE_OPTIONS.objectif, p.profile.objectif).split(' (')[0])}</span>
+        <span>🍽️ ${esc(REGIMES[p.regime].label)}</span>
+        <span>⚖️ ${p.profile.poids} kg</span>
+        <span>${p.collation ? '🍎 Avec collation' : '🚫 Sans collation'}</span>
+      </div>
+      <div class="person-macros"><b>${T.kcal}</b> kcal · <span class="mp">P ${T.p} g</span> · <span class="mc">G ${T.c} g</span> · <span class="mf">L ${T.f} g</span></div>
+    </div>`;
+}
+
+function personForm(p) {
+  return `
+    <div class="person person-${p.id}" data-person="${p.id}">
       <div class="person-head">
         <input class="person-name" data-field="name" value="${esc(p.name)}" maxlength="20" aria-label="Prénom">
-        <label class="check"><input type="checkbox" data-field="active" ${p.active ? 'checked' : ''}> Mange cette semaine</label>
+        <label class="check"><input type="checkbox" data-field="collation" ${p.collation ? 'checked' : ''}> Prend une collation</label>
       </div>
-      <label class="check"><input type="checkbox" data-field="collation" ${p.collation ? 'checked' : ''}> Prend une collation</label>
 
-      <details class="calc">
-        <summary>Mensurations & objectif</summary>
-        <div class="grid-form">
-          <label>Sexe <select data-profile="sexe">${options(PROFILE_OPTIONS.sexe, p.profile.sexe)}</select></label>
-          <label>Âge <input type="number" data-profile="age" min="14" max="99" value="${p.profile.age}"></label>
-          <label>Poids (kg) <input type="number" data-profile="poids" min="30" max="250" value="${p.profile.poids}"></label>
-          <label>Taille (cm) <input type="number" data-profile="taille" min="120" max="230" value="${p.profile.taille}"></label>
-          <label class="span2">Activité <select data-profile="activite">${options(PROFILE_OPTIONS.activite, p.profile.activite)}</select></label>
-          <label class="span2">Objectif <select data-profile="objectif">${options(PROFILE_OPTIONS.objectif, p.profile.objectif)}</select></label>
-        </div>
-        <button type="button" class="secondary" data-calc>↺ Recalculer les objectifs</button>
-      </details>
+      <label class="field-label">Régime
+        <select data-field="regime">${options(Object.entries(REGIMES).map(([k, r]) => [k, r.label]), p.regime)}</select>
+      </label>
+      <p class="hint regime-desc">${esc(REGIMES[p.regime].desc)}</p>
+
+      <div class="grid-form">
+        <label>Sexe <select data-profile="sexe">${options(PROFILE_OPTIONS.sexe, p.profile.sexe)}</select></label>
+        <label>Âge <input type="number" data-profile="age" min="14" max="99" value="${p.profile.age}"></label>
+        <label>Poids (kg) <input type="number" data-profile="poids" min="30" max="250" value="${p.profile.poids}"></label>
+        <label>Taille (cm) <input type="number" data-profile="taille" min="120" max="230" value="${p.profile.taille}"></label>
+        <label class="span2">Activité <select data-profile="activite">${options(PROFILE_OPTIONS.activite, p.profile.activite)}</select></label>
+        <label class="span2">Objectif <select data-profile="objectif">${options(PROFILE_OPTIONS.objectif, p.profile.objectif)}</select></label>
+      </div>
 
       <div class="targets">
         ${TARGET_LABELS.map(([k, label, unit]) => `
@@ -1246,12 +1402,19 @@ function renderPeopleForms() {
             <input type="number" data-target="${k}" min="0" max="6000" value="${p.targets[k]}"></label>`).join('')}
       </div>
       <p class="hint macro-check"></p>
-    </div>`).join('');
-  state.people.forEach(updateMacroCheck);
+      <button type="button" class="primary small" data-save>✓ Enregistrer ${esc(p.name)}</button>
+    </div>`;
+}
+
+function renderPeopleForms() {
+  $('#people').innerHTML = state.people.map(p => (p.saved ? personSummary(p) : personForm(p))).join('');
+  state.people.filter(p => !p.saved).forEach(updateMacroCheck);
+  $('#people-hint').hidden = state.people.every(p => p.saved);
 }
 
 function updateMacroCheck(p) {
   const el = document.querySelector(`[data-person="${p.id}"] .macro-check`);
+  if (!el) return;
   const T = p.targets;
   const fromMacros = 4 * (+T.p || 0) + 4 * (+T.c || 0) + 9 * (+T.f || 0);
   const diff = fromMacros - (+T.kcal || 0);
@@ -1262,8 +1425,6 @@ function updateMacroCheck(p) {
 
 function fillForms() {
   renderPeopleForms();
-  $('#regime').innerHTML = options(Object.entries(REGIMES).map(([k, r]) => [k, r.label]), state.prefs.regime);
-  $('#regime-desc').textContent = REGIMES[state.prefs.regime].desc;
   $('#temps').innerHTML = options(TIME_OPTIONS, state.prefs.temps);
   if (!BUDGET_OPTIONS.some(([k]) => k === state.prefs.budget)) state.prefs.budget = 'libre'; // anciennes valeurs
   $('#budget').innerHTML = options(BUDGET_OPTIONS, state.prefs.budget);
@@ -1291,10 +1452,14 @@ function bindEvents() {
 
     if (field === 'name') {
       p.name = e.target.value.trim() || (p.id === 'lola' ? 'Lola' : 'Barnabé');
-    } else if (field === 'active' || field === 'collation') {
-      p[field] = e.target.checked;
-      card.classList.toggle('inactive', !p.active);
+      card.querySelector('[data-save]').textContent = `✓ Enregistrer ${p.name}`;
+    } else if (field === 'collation') {
+      p.collation = e.target.checked;
       rebalancePlan();
+    } else if (field === 'regime') {
+      p.regime = e.target.value;
+      card.querySelector('.regime-desc').textContent = REGIMES[p.regime].desc;
+      if (state.plan) showNotice(`Régime de ${p.name} modifié : clique sur « Régénérer » pour l'appliquer au menu.`);
     } else if (profile) {
       // Changer une mensuration ou l'objectif recalcule les cibles (ajustables ensuite à la main)
       p.profile[profile] = e.target.type === 'number' ? Number(e.target.value) : e.target.value;
@@ -1311,22 +1476,14 @@ function bindEvents() {
     render();
   });
 
+  // Enregistrer (→ résumé) ou Modifier (→ formulaire)
   $('#people').addEventListener('click', e => {
-    if (!e.target.matches('[data-calc]')) return;
-    const card = e.target.closest('[data-person]');
-    const p = personById(card.dataset.person);
-    p.targets = computeNeeds(p.profile);
-    for (const [k] of TARGET_LABELS) card.querySelector(`[data-target="${k}"]`).value = p.targets[k];
-    updateMacroCheck(p);
-    rebalancePlan();
+    const btn = e.target.closest('[data-save],[data-edit]');
+    if (!btn) return;
+    const p = personById(btn.closest('[data-person]').dataset.person);
+    p.saved = btn.hasAttribute('data-save');
     saveState();
-    render();
-  });
-
-  $('#regime').addEventListener('change', e => {
-    state.prefs.regime = e.target.value;
-    $('#regime-desc').textContent = REGIMES[state.prefs.regime].desc;
-    prefsChanged();
+    renderPeopleForms();
   });
 
   for (const k of ['temps', 'budget']) {
@@ -1337,6 +1494,9 @@ function bindEvents() {
   }
 
   $('#quiz').addEventListener('click', onQuizClick);
+  $('#quiz').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.id === 'custom-dislike') { e.preventDefault(); addCustomDislike(); }
+  });
 
   $('#drive-url').addEventListener('change', e => {
     state.driveUrl = e.target.value.trim();

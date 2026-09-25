@@ -24,13 +24,8 @@
         <span class="logo" aria-hidden="true">🥑</span>
         <div>
           <h1>Menu Protéiné</h1>
-          <p class="subtitle">Le menu healthy du foyer, calé sur vos macros 💪</p>
+          <p class="subtitle">Le menu de la semaine</p>
         </div>
-      </div>
-      <div class="hero-chips" aria-hidden="true">
-        <span class="chip chip-green">🥦 Sain</span>
-        <span class="chip chip-orange">🍗 Protéiné</span>
-        <span class="chip chip-red">🛒 Leclerc Drive</span>
       </div>
     </div>
   </header>
@@ -40,9 +35,9 @@
       <!-- 1. Le foyer -->
       <section class="card" id="profil">
         <h2><span class="step">1</span> Le foyer</h2>
-        <p class="hint top">Vous mangez les mêmes recettes, mais chacun a ses propres portions, calculées selon ses besoins.</p>
+        <p class="hint top">Vous mangez les mêmes recettes, chacun avec ses portions. Si une recette ne convient pas au régime de l'un de vous, il a sa propre variante.</p>
         <div id="people" class="people"></div>
-        <p class="hint">Les objectifs se recalculent quand vous changez les mensurations ou l'objectif (formule de Mifflin-St Jeor), puis restent ajustables à la main. Protéines par kg de poids de corps : 1,6 g en maintien, 2 g en perte de gras ou en prise de muscle, 2,2 g en recomposition corporelle. Lipides : 27 % des calories ; glucides : le reste.</p>
+        <p class="hint" id="people-hint">Remplissez une seule fois puis cliquez sur « Enregistrer ». Les objectifs se recalculent quand vous changez les mensurations ou l'objectif (formule de Mifflin-St Jeor), puis restent ajustables à la main. Protéines par kg de poids de corps : 1,6 g en maintien, 2 g en perte de gras ou en prise de muscle, 2,2 g en recomposition corporelle. Lipides : 27 % des calories ; glucides : le reste.</p>
       </section>
 
       <!-- 2. Préférences -->
@@ -50,10 +45,6 @@
         <h2><span class="step">2</span> Nos préférences</h2>
         <div class="prefs-grid">
           <div>
-            <label class="field-label">Type de régime
-              <select id="regime"></select>
-            </label>
-            <p class="hint" id="regime-desc"></p>
             <div class="pref-selects">
               <label class="field-label">Temps en cuisine
                 <select id="temps"></select>
