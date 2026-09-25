@@ -6,7 +6,7 @@
      le navigateur détecte alors le nouveau service worker, l'appli affiche
      « Nouvelle version disponible » et recharge les nouveaux fichiers.
    ============================================================ */
-const VERSION = 'v1.2.0';
+const VERSION = 'v1.3.0';
 const CACHE = `menu-proteine-${VERSION}`;
 
 const FILES = [
@@ -56,5 +56,29 @@ self.addEventListener('fetch', event => {
     caches.match(request, { ignoreSearch: true })
       .then(cached => cached || fetch(request))
       .catch(() => caches.match('index.html')),
+  );
+});
+
+// ---------- Notifications push (rappels d'eau envoyés par GitHub Actions)
+self.addEventListener('push', event => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch { data = { body: event.data && event.data.text() }; }
+  event.waitUntil(self.registration.showNotification(data.title || "💧 Un verre d'eau ?", {
+    body: data.body || "Pense à boire un verre d'eau.",
+    icon: 'icons/icon-192.png',
+    badge: 'icons/icon-192.png',
+    tag: 'rappel-eau', // un nouveau rappel remplace le précédent au lieu de s'empiler
+    data: { url: data.url || './' },
+  }));
+});
+
+// Toucher la notification ouvre l'appli
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const open = list.find(c => 'focus' in c);
+      return open ? open.focus() : self.clients.openWindow(event.notification.data.url);
+    }),
   );
 });

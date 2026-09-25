@@ -476,6 +476,19 @@ button:active { transform: scale(.97); }
   :root:not([data-theme="light"]) .recup-tip { background: #16323d; color: #9fd4ea; }
 }
 
+/* ---------- Rappels d'eau */
+.water-card { background: linear-gradient(135deg, #e8f5fd, var(--surface) 60%); }
+.water-step { background: linear-gradient(135deg, #7cc8f0, #2f8fd0); }
+.water-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+@media (max-width: 560px) { .water-settings { grid-template-columns: 1fr; } }
+.water-ok { font-weight: 800; color: var(--leaf-dark); margin: 4px 0 8px; }
+.water-steps { background: var(--surface-2); border-radius: 16px; padding: 10px 14px; font-size: .9rem; }
+.water-steps p { margin: 4px 0; }
+.water-steps ol { margin: 6px 0; padding-left: 20px; display: grid; gap: 8px; }
+.water-steps code { background: var(--surface); padding: 1px 6px; border-radius: 6px; font-weight: 700; }
+.water-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .water-card { background: linear-gradient(135deg, #16323d, var(--surface) 60%); } }
+
 /* ---------- Budget */
 .budget-row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; margin: 4px 0 10px; font-weight: 800; }
 .budget-row b { font-family: var(--font-title); font-size: 1.2rem; color: var(--leaf-dark); }
@@ -539,7 +552,7 @@ kbd { background: #fff; border: 1px solid #b9d3ea; border-radius: 6px; padding: 
 
 /* ---------- Impression */
 @media print {
-  body::before, .appbar, .setup, .quiz-card, .actions, .tabs, .toolbar, .off-intro, .stock-card, .stock-actions, .hint, .drive-link, .icon-btn, .chip-btn, .link-btn, .footer { display: none !important; }
+  body::before, .appbar, .setup, .quiz-card, .water-card, .actions, .tabs, .toolbar, .off-intro, .stock-card, .stock-actions, .hint, .drive-link, .icon-btn, .chip-btn, .link-btn, .footer { display: none !important; }
   body { background: #fff; color: #000; }
   .tab-panel[hidden] { display: block !important; }
   .update-banner { display: none !important; }

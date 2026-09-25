@@ -1,0 +1,27 @@
+# Rappels pour boire de l'eau : notifications push vers les téléphones abonnés.
+# Se lance toutes les heures de 7 h à 20 h UTC (= 9 h à 21 h à Paris selon l'heure d'été ou d'hiver) ;
+# le script vérifie l'heure de Paris et le rythme choisi par chacun avant d'envoyer.
+# Bouton « Run workflow » (onglet Actions) : envoie une notification de test à tout le monde.
+name: Rappels d'eau
+
+on:
+  schedule:
+    - cron: '0 7-20 * * *'
+  workflow_dispatch:
+
+jobs:
+  rappel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Installer web-push
+        run: npm install --no-save --no-package-lock web-push@3
+      - name: Envoyer les rappels
+        run: node .github/scripts/rappel-eau.mjs
+        env:
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          PUSH_SUBSCRIPTIONS: ${{ secrets.PUSH_SUBSCRIPTIONS }}

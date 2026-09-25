@@ -1384,6 +1384,9 @@ const options = (list, value) => list
 
 const TARGET_LABELS = [['kcal', 'Calories / jour', 'kcal'], ['p', 'Protéines', 'g'], ['c', 'Glucides', 'g'], ['f', 'Lipides', 'g']];
 
+// Objectif d'eau indicatif : environ 35 ml par kg de poids de corps (boissons), arrondi à 0,1 L
+const waterGoal = p => (Math.round(p.profile.poids * 0.035 * 10) / 10).toString().replace('.', ',');
+
 const labelOf = (list, v) => (list.find(o => String(o[0]) === String(v)) || ['', ''])[1];
 
 // Profil enregistré : simple résumé. Sinon : formulaire complet.
@@ -1399,6 +1402,7 @@ function personSummary(p) {
         <span>🎯 ${esc(labelOf(PROFILE_OPTIONS.objectif, p.profile.objectif).split(' (')[0])}</span>
         <span>🍽️ ${esc(REGIMES[p.regime].label)}</span>
         <span>⚖️ ${p.profile.poids} kg</span>
+        <span>💧 ${waterGoal(p)} L d'eau / jour</span>
         <span>${p.collation ? '🍎 Avec collation' : '🚫 Sans collation'}</span>
       </div>
       <div class="person-macros"><b>${T.kcal}</b> kcal · <span class="mp">P ${T.p} g</span> · <span class="mc">G ${T.c} g</span> · <span class="mf">L ${T.f} g</span></div>
@@ -1662,6 +1666,130 @@ function bindEvents() {
 }
 
 // ============================================================
+//  Rappels d'eau (notifications push)
+//  L'appli abonne le téléphone ; GitHub Actions envoie les notifications
+//  (voir .github/workflows/rappels-eau.yml). La clé publique peut être publique.
+// ============================================================
+const VAPID_PUBLIC_KEY = 'BGBCOspq8oPslC0c4yFnDw7d2UuhCt5QAZx_wDGNO3_oK1xw0NDx6E_IkhXAcr2rPLhrz_-WTXAM24FMpGoWemc';
+const WATER_RHYTHMS = [
+  ['4x', '💧 4 rappels : 9 h, 12 h, 15 h, 18 h'],
+  ['hourly', '⏰ Toutes les heures de 9 h à 21 h'],
+];
+const SECRETS_URL = 'https://github.com/lolabodoin-design/Appli-meal-/settings/secrets/actions';
+
+const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+
+function urlBase64ToUint8Array(base64) {
+  const padded = (base64 + '='.repeat((4 - (base64.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/');
+  return Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+}
+
+// Code à coller dans le secret GitHub PUSH_SUBSCRIPTIONS (une ligne par téléphone)
+function subscriptionCode(sub) {
+  return JSON.stringify({ prenom: state.water?.prenom || '', rythme: state.water?.rythme || '4x', subscription: sub.toJSON() });
+}
+
+async function currentSubscription() {
+  if (!pushSupported()) return null;
+  const reg = await navigator.serviceWorker.getRegistration();
+  return reg ? reg.pushManager.getSubscription() : null;
+}
+
+async function renderWater() {
+  const el = $('#water-body');
+  state.water ||= { prenom: state.people[0].name, rythme: '4x' };
+  const settings = `
+    <div class="water-settings">
+      <label class="field-label">Ce téléphone est celui de
+        <select id="water-prenom">${options(state.people.map(p => [p.name, p.name]), state.water.prenom)}</select>
+      </label>
+      <label class="field-label">Rythme
+        <select id="water-rythme">${options(WATER_RHYTHMS, state.water.rythme)}</select>
+      </label>
+    </div>`;
+
+  if (!pushSupported() || !location.protocol.startsWith('http')) {
+    el.innerHTML = `<p class="hint">Les rappels fonctionnent depuis l'appli installée sur ton téléphone (iPhone : iOS 16.4 ou plus, ouverte depuis l'icône 🥑 de l'écran d'accueil).</p>`;
+    return;
+  }
+  if (/iPhone|iPad/.test(navigator.userAgent) && !isStandalone()) {
+    el.innerHTML = `<p class="hint">📱 Sur iPhone, ouvre l'appli <b>depuis l'icône 🥑 de ton écran d'accueil</b> (pas depuis Safari) pour activer les rappels.</p>`;
+    return;
+  }
+  if (Notification.permission === 'denied') {
+    el.innerHTML = `<p class="hint warn">Les notifications sont bloquées. Sur iPhone : Réglages → Notifications → Menu Protéiné → Autoriser les notifications, puis rouvre l'appli.</p>`;
+    return;
+  }
+
+  const sub = await currentSubscription();
+  if (!sub) {
+    el.innerHTML = `${settings}
+      <button type="button" class="primary small" id="btn-water-on">🔔 Activer les rappels d'eau</button>
+      <p class="hint">Ton téléphone va te demander l'autorisation d'afficher des notifications : réponds « Autoriser ».</p>`;
+    return;
+  }
+  el.innerHTML = `${settings}
+    <p class="water-ok">✅ Rappels activés sur ce téléphone</p>
+    <div class="water-steps">
+      <p><b>Dernière étape (une seule fois)</b> : donner ce téléphone au robot GitHub.</p>
+      <ol>
+        <li><button type="button" class="secondary" id="btn-water-copy">📋 Copier le code de ce téléphone</button></li>
+        <li>Ouvre <a href="${SECRETS_URL}" target="_blank" rel="noopener">les secrets du dépôt GitHub</a> (connecté à ton compte).</li>
+        <li><b>New repository secret</b> → Name : <code>PUSH_SUBSCRIPTIONS</code> → colle le code dans <i>Secret</i> → <b>Add secret</b>.
+          <br><small>Pour le téléphone de Barnabé : modifie ce secret et colle son code <b>sur une nouvelle ligne</b>.</small></li>
+      </ol>
+      <p class="hint">Si tu changes le rythme ou le prénom, recopie le code et remplace-le dans le secret.</p>
+    </div>
+    <div class="water-actions">
+      <button type="button" class="chip-btn" id="btn-water-test">🔔 Tester sur ce téléphone</button>
+      <button type="button" class="ghost" id="btn-water-off">Désactiver</button>
+    </div>`;
+}
+
+async function enableWater() {
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') { renderWater(); return; }
+    const reg = await navigator.serviceWorker.ready;
+    await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
+  } catch (err) {
+    alert(`Impossible d'activer les rappels : ${err.message}`);
+  }
+  renderWater();
+}
+
+function bindWaterEvents() {
+  $('#water').addEventListener('change', e => {
+    if (e.target.id === 'water-prenom') state.water.prenom = e.target.value;
+    if (e.target.id === 'water-rythme') state.water.rythme = e.target.value;
+    saveState();
+  });
+  $('#water').addEventListener('click', async e => {
+    const id = e.target.closest('button')?.id;
+    if (id === 'btn-water-on') enableWater();
+    else if (id === 'btn-water-copy') {
+      const sub = await currentSubscription();
+      try {
+        await navigator.clipboard.writeText(subscriptionCode(sub));
+        e.target.textContent = '✅ Code copié !';
+      } catch {
+        prompt('Copie ce code :', subscriptionCode(sub));
+      }
+    } else if (id === 'btn-water-test') {
+      const reg = await navigator.serviceWorker.ready;
+      reg.showNotification(`💧 ${state.water.prenom}, un verre d'eau ?`, {
+        body: 'Test local : les notifications s\'affichent bien sur ce téléphone 🎉', icon: 'icons/icon-192.png', tag: 'rappel-eau',
+      });
+    } else if (id === 'btn-water-off') {
+      const sub = await currentSubscription();
+      if (sub) await sub.unsubscribe();
+      renderWater();
+    }
+  });
+}
+
+// ============================================================
 //  Appli installable (PWA) : hors connexion + mises à jour
 // ============================================================
 let updateRequested = false;
@@ -1698,5 +1826,7 @@ function registerServiceWorker() {
 
 fillForms();
 bindEvents();
+bindWaterEvents();
 render();
 registerServiceWorker();
+renderWater();
