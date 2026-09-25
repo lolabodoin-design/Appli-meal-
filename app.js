@@ -1467,13 +1467,18 @@ function bindEvents() {
 // ============================================================
 //  Appli installable (PWA) : hors connexion + mises à jour
 // ============================================================
+let updateRequested = false;
+
 function registerServiceWorker() {
   // Le service worker ne fonctionne qu'en https (ou sur localhost), pas en ouvrant le fichier directement
   if (!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
   navigator.serviceWorker.register('service-worker.js').then(reg => {
     const offerUpdate = worker => {
       $('#update-banner').hidden = false;
-      $('#btn-update').onclick = () => worker.postMessage('skipWaiting');
+      $('#btn-update').onclick = () => {
+        updateRequested = true;
+        worker.postMessage('skipWaiting');
+      };
     };
     if (reg.waiting && navigator.serviceWorker.controller) offerUpdate(reg.waiting);
     reg.addEventListener('updatefound', () => {
@@ -1485,10 +1490,11 @@ function registerServiceWorker() {
     });
   }).catch(() => { /* pas de mode hors connexion, l'appli fonctionne quand même */ });
 
-  let reloading = false;
+  // On ne recharge que si l'utilisateur a demandé la mise à jour
+  // (pas lors de la toute première installation)
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloading) return;
-    reloading = true;
+    if (!updateRequested) return;
+    updateRequested = false;
     location.reload();
   });
 }
