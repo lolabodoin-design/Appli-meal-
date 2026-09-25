@@ -6,7 +6,7 @@
      le navigateur détecte alors le nouveau service worker, l'appli affiche
      « Nouvelle version disponible » et recharge les nouveaux fichiers.
    ============================================================ */
-const VERSION = 'v1.1.0';
+const VERSION = 'v1.1.1';
 const CACHE = `menu-proteine-${VERSION}`;
 
 const FILES = [
