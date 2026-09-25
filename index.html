@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Menu Protéiné</title>
+  <meta name="description" content="Le menu healthy du foyer, calé sur vos macros, avec la liste de courses Leclerc Drive.">
+  <!-- Appli installable (PWA) -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#3a9d5d">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Menu Protéiné">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="appbar">
+    <div class="wrap appbar-inner">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">🥑</span>
+        <div>
+          <h1>Menu Protéiné</h1>
+          <p class="subtitle">Le menu healthy du foyer, calé sur vos macros 💪</p>
+        </div>
+      </div>
+      <div class="hero-chips" aria-hidden="true">
+        <span class="chip chip-green">🥦 Sain</span>
+        <span class="chip chip-orange">🍗 Protéiné</span>
+        <span class="chip chip-red">🛒 Leclerc Drive</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="setup">
+      <!-- 1. Le foyer -->
+      <section class="card" id="profil">
+        <h2><span class="step">1</span> Le foyer</h2>
+        <p class="hint top">Vous mangez les mêmes recettes, mais chacun a ses propres portions, calculées selon ses besoins.</p>
+        <div id="people" class="people"></div>
+        <p class="hint">Les objectifs se recalculent quand vous changez les mensurations ou l'objectif (formule de Mifflin-St Jeor), puis restent ajustables à la main. Protéines par kg de poids de corps : 1,6 g en maintien, 2 g en perte de gras ou en prise de muscle, 2,2 g en recomposition corporelle. Lipides : 27 % des calories ; glucides : le reste.</p>
+      </section>
+
+      <!-- 2. Préférences -->
+      <section class="card" id="prefs">
+        <h2><span class="step">2</span> Nos préférences</h2>
+        <div class="prefs-grid">
+          <div>
+            <label class="field-label">Type de régime
+              <select id="regime"></select>
+            </label>
+            <p class="hint" id="regime-desc"></p>
+            <div class="pref-selects">
+              <label class="field-label">Temps en cuisine
+                <select id="temps"></select>
+              </label>
+              <label class="field-label">Budget courses du foyer
+                <select id="budget"></select>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="field-label">Notre magasin Leclerc Drive <span class="optional">(facultatif)</span>
+              <input type="url" id="drive-url" placeholder="https://fd…-courses.leclercdrive.fr/magasin-…">
+            </label>
+            <p class="hint"><span id="drive-status"></span> Va sur <a href="https://www.leclercdrive.fr/" target="_blank" rel="noopener">leclercdrive.fr</a>, choisis ton magasin, puis colle ici l'adresse de n'importe quelle page du magasin. Les liens de la liste de courses lanceront alors la recherche de chaque produit dans ton Drive.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Quiz -->
+      <section class="card quiz-card" id="quiz-section">
+        <h2><span class="step">3</span> Nos envies de la semaine <span class="quiz-badge">Quiz</span></h2>
+        <div id="quiz"></div>
+      </section>
+    </div>
+
+    <div class="actions">
+      <button type="button" id="btn-generate" class="primary">✨ Générer notre menu de la semaine</button>
+      <p id="notice" class="notice" hidden></p>
+    </div>
+
+    <div id="results" hidden>
+      <nav class="tabs" role="tablist">
+        <button type="button" role="tab" class="tab active" data-tab="menu">📅 Menu</button>
+        <button type="button" role="tab" class="tab" data-tab="courses">🛒 Courses <span id="count" class="badge"></span></button>
+      </nav>
+
+      <section id="tab-menu" class="tab-panel">
+        <div id="week-summary" class="card summary"></div>
+        <div id="week" class="week-grid"></div>
+      </section>
+
+      <section id="tab-courses" class="tab-panel" hidden>
+        <div class="card">
+          <div class="toolbar">
+            <button type="button" id="btn-copy" class="secondary">📋 Copier</button>
+            <button type="button" id="btn-download" class="secondary">⬇️ Télécharger</button>
+            <button type="button" id="btn-print" class="secondary">🖨️ Imprimer</button>
+            <button type="button" id="btn-uncheck" class="ghost">Tout décocher</button>
+          </div>
+          <details class="stock-card" id="stock-card">
+            <summary>
+              <span class="stock-logo" aria-hidden="true">🏪</span>
+              <span><b>Stock réel de notre Drive</b><br><small>Vérifie ce qui est vraiment disponible dans ton magasin, avec les prix, et adapte le menu aux ruptures.</small></span>
+            </summary>
+            <ol class="stock-steps">
+              <li><b>Une seule fois :</b> glisse ce bouton dans ta barre de favoris →
+                <a id="bm-link" class="bookmarklet" href="#">🥑 Stock Drive</a>
+                <small>(barre de favoris invisible ? <kbd>Ctrl/⌘ + Maj + B</kbd>)</small></li>
+              <li><button type="button" id="btn-copy-drive" class="secondary">📋 Copier la liste pour le Drive</button></li>
+              <li>Ouvre <a id="drive-open" href="https://www.leclercdrive.fr/" target="_blank" rel="noopener">ton magasin Leclerc Drive</a>, clique sur le favori <b>🥑 Stock Drive</b>, colle la liste et lance la vérification (≈ 3 s par produit).</li>
+              <li>Clique sur « Copier le résultat pour l'appli » puis colle-le ici :
+                <textarea id="stock-in" placeholder='{"v":1,"type":"stock-drive",…}'></textarea>
+                <button type="button" id="btn-import-stock" class="secondary">📥 Importer le stock</button></li>
+            </ol>
+            <p class="hint">Le favori lit les pages de recherche dans <b>ta</b> session, une recherche toutes les 3 secondes. Il n'ajoute rien au panier et s'arrête si Leclerc demande une vérification anti-robot.</p>
+          </details>
+          <div id="stock-summary"></div>
+          <p class="checkout" id="checkout"></p>
+
+          <div class="off-intro">
+            <span class="off-logo" aria-hidden="true">🔎</span>
+            <div>
+              <p><b>Vrais produits avec Open Food Facts.</b> Clique sur « Produits réels » pour voir les produits les plus achetés en France, avec leur Nutri-Score, puis choisis le tien. Le lien Leclerc Drive cherchera alors ce produit précis.</p>
+              <label class="check"><input type="checkbox" id="use-real"> Utiliser les valeurs nutritionnelles des produits choisis dans le calcul des portions</label>
+            </div>
+          </div>
+          <div id="shopping"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="wrap footer">
+    Valeurs nutritionnelles indicatives (table Ciqual, étiquettes, <a href="https://fr.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a>). Ceci n'est pas un avis médical. 🌱
+  </footer>
+
+  <div id="update-banner" class="update-banner" hidden>
+    <span>✨ Nouvelle version de l'appli disponible</span>
+    <button type="button" id="btn-update">Mettre à jour</button>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="drive-stock.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

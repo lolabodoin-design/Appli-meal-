@@ -1,0 +1,369 @@
+// ============================================================
+//  Base de données : ingrédients et recettes
+//  Valeurs nutritionnelles pour 100 g (poids cru / tel qu'acheté),
+//  indicatives, d'après la table Ciqual (ANSES) et des étiquettes courantes.
+// ============================================================
+
+// Rayons utilisés pour regrouper la liste de courses
+const RAYONS = [
+  'Viandes & poissons',
+  'Crèmerie & œufs',
+  'Fruits & légumes',
+  'Épicerie',
+  'Surgelés',
+  'Boulangerie',
+  'Placard',
+];
+
+// Champs :
+//   name             nom affiché
+//   kcal, p, c, f    calories, protéines, glucides, lipides pour 100 g
+//   rayon            rayon du magasin
+//   search           terme recherché sur Leclerc Drive
+//   tags             viande | porc | poisson | lactose | whey (pour les filtres)
+//   piece / unit(s)  poids d'une pièce, pour acheter à l'unité
+//   whole            true = les portions sont arrondies à la pièce entière (œufs, tortillas)
+//   pack / packLabel conditionnement vendu en magasin
+//   placard          produit qu'on a souvent déjà chez soi
+//   off              catégorie Open Food Facts utilisée pour proposer de vrais produits
+//   fresh            produit frais sans emballage (pas de fiche Open Food Facts)
+//   cher             ingrédient plutôt coûteux (évité avec le budget « économique »)
+const INGREDIENTS = {
+  // --- Viandes & poissons
+  boeufemince:{ name: 'Émincé de bœuf', kcal: 125, p: 22, c: 0, f: 4, rayon: 'Viandes & poissons', search: 'émincé de boeuf', tags: ['viande'], pack: 400, packLabel: 'barquette 400 g', cher: true },
+  porc:       { name: 'Filet mignon de porc', kcal: 120, p: 22, c: 0, f: 3.5, rayon: 'Viandes & poissons', search: 'filet mignon de porc', off: 'en:pork-filet-mignon', tags: ['viande', 'porc'], pack: 500, packLabel: 'filet ~500 g', cher: true },
+  maquereau:  { name: 'Filets de maquereau (conserve)', kcal: 220, p: 19, c: 1, f: 16, rayon: 'Épicerie', search: 'filets de maquereau', off: 'en:mackerel-fillets', tags: ['poisson'], pack: 120, packLabel: 'boîte (120 g égouttés)' },
+  poulet:     { name: 'Blanc de poulet', kcal: 110, p: 23, c: 0, f: 1.5, rayon: 'Viandes & poissons', search: 'filet de poulet', off: 'en:chicken-breasts', tags: ['viande'], pack: 400, packLabel: 'barquette 400 g' },
+  dinde:      { name: 'Escalope de dinde', kcal: 105, p: 23, c: 0, f: 1.2, rayon: 'Viandes & poissons', search: 'escalope de dinde', off: 'en:turkey-cutlets', tags: ['viande'], pack: 400, packLabel: 'barquette 400 g' },
+  boeuf:      { name: 'Bœuf haché 5 % MG', kcal: 125, p: 21, c: 0, f: 5, rayon: 'Viandes & poissons', search: 'steak haché 5%', off: 'en:fresh-ground-beef-steaks', tags: ['viande'], pack: 250, packLabel: 'boîte 2 steaks (250 g)' },
+  jambon:     { name: 'Jambon blanc découenné', kcal: 110, p: 21, c: 0.5, f: 3, rayon: 'Viandes & poissons', search: 'jambon blanc découenné', off: 'en:white-hams', tags: ['viande', 'porc'], pack: 160, packLabel: 'paquet 4 tranches (160 g)' },
+  saumon:     { name: 'Pavé de saumon', kcal: 200, p: 20, c: 0, f: 13, rayon: 'Viandes & poissons', search: 'pavé de saumon', off: 'en:salmon-steaks', tags: ['poisson'], pack: 250, packLabel: '2 pavés (250 g)', cher: true },
+  cabillaud:  { name: 'Dos de cabillaud', kcal: 80, p: 18, c: 0, f: 0.7, rayon: 'Surgelés', search: 'dos de cabillaud surgelé', off: 'en:cod-fillets', tags: ['poisson'], pack: 400, packLabel: 'sachet 400 g', cher: true },
+  crevettes:  { name: 'Crevettes cuites décortiquées', kcal: 95, p: 21, c: 0, f: 1.2, rayon: 'Viandes & poissons', search: 'crevettes décortiquées', off: 'en:cooked-shrimps', tags: ['poisson'], pack: 200, packLabel: 'barquette 200 g', cher: true },
+  saumonfume: { name: 'Saumon fumé', kcal: 180, p: 22, c: 0, f: 10, rayon: 'Viandes & poissons', search: 'saumon fumé', off: 'en:smoked-salmons', tags: ['poisson'], pack: 120, packLabel: 'paquet 4 tranches (120 g)', cher: true },
+  sardines:   { name: "Sardines à l'huile d'olive (égouttées)", kcal: 210, p: 24, c: 0, f: 13, rayon: 'Épicerie', search: "sardines à l'huile d'olive", off: 'en:sardines-in-olive-oil', tags: ['poisson'], pack: 100, packLabel: 'boîte (100 g égoutté)' },
+  thon:       { name: 'Thon au naturel (égoutté)', kcal: 110, p: 25, c: 0, f: 1, rayon: 'Épicerie', search: 'thon au naturel', off: 'en:tunas-in-brine', tags: ['poisson'], pack: 140, packLabel: 'boîte (140 g égoutté)' },
+
+  // --- Crèmerie & œufs
+  mozza:      { name: 'Mozzarella light', kcal: 165, p: 19, c: 1, f: 9, rayon: 'Crèmerie & œufs', search: 'mozzarella light', off: 'en:mozzarella', tags: ['lactose'], pack: 125, packLabel: 'boule 125 g' },
+  houmous:    { name: 'Houmous', kcal: 290, p: 7.5, c: 12, f: 23, rayon: 'Crèmerie & œufs', search: 'houmous', off: 'en:hummus', pack: 175, packLabel: 'pot 175 g' },
+  oeufs:      { name: 'Œufs', kcal: 140, p: 12.5, c: 0.7, f: 9.5, rayon: 'Crèmerie & œufs', search: 'oeufs plein air', off: 'en:chicken-eggs', piece: 50, unit: 'œuf', units: 'œufs', whole: true },
+  blancoeuf:  { name: "Blancs d'œufs liquides", kcal: 48, p: 11, c: 0.7, f: 0.2, rayon: 'Crèmerie & œufs', search: "blanc d'oeuf liquide", pack: 500, packLabel: 'brique 500 g' },
+  skyr:       { name: 'Skyr nature', kcal: 60, p: 10, c: 4, f: 0.2, rayon: 'Crèmerie & œufs', search: 'skyr nature', off: 'en:plain-skyrs', tags: ['lactose'], pack: 450, packLabel: 'pot 450 g' },
+  fromblanc:  { name: 'Fromage blanc 0 %', kcal: 45, p: 7.5, c: 4, f: 0.1, rayon: 'Crèmerie & œufs', search: 'fromage blanc 0%', off: 'fr:fromages-blancs-natures', tags: ['lactose'], pack: 500, packLabel: 'pot 500 g' },
+  cottage:    { name: 'Cottage cheese', kcal: 100, p: 11, c: 3.5, f: 4.5, rayon: 'Crèmerie & œufs', search: 'cottage cheese', off: 'en:plain-cottage-cheeses', tags: ['lactose'], pack: 200, packLabel: 'pot 200 g' },
+  lait:       { name: 'Lait demi-écrémé', kcal: 46, p: 3.3, c: 4.8, f: 1.6, rayon: 'Crèmerie & œufs', search: 'lait demi écrémé', off: 'en:semi-skimmed-milks', tags: ['lactose'], pack: 1000, packLabel: 'brique 1 L' },
+  feta:       { name: 'Feta', kcal: 265, p: 14, c: 1, f: 22, rayon: 'Crèmerie & œufs', search: 'feta AOP', off: 'en:feta', tags: ['lactose'], pack: 200, packLabel: 'bloc 200 g' },
+  parmesan:   { name: 'Parmesan râpé', kcal: 390, p: 33, c: 0, f: 28, rayon: 'Crèmerie & œufs', search: 'parmesan râpé', off: 'en:parmigiano-reggiano', tags: ['lactose'], pack: 100, packLabel: 'sachet 100 g', cher: true },
+  tofu:       { name: 'Tofu ferme', kcal: 125, p: 13, c: 2, f: 7, rayon: 'Crèmerie & œufs', search: 'tofu nature', off: 'en:plain-tofu', pack: 250, packLabel: 'bloc 250 g' },
+
+  // --- Fruits & légumes
+  carotte:    { name: 'Carottes', kcal: 36, p: 0.8, c: 7, f: 0.2, rayon: 'Fruits & légumes', search: 'carottes', fresh: true, piece: 100, unit: 'carotte', units: 'carottes' },
+  mangue:     { name: 'Mangue', kcal: 60, p: 0.8, c: 14, f: 0.4, rayon: 'Fruits & légumes', search: 'mangue', fresh: true, piece: 300, unit: 'mangue', units: 'mangues', cher: true },
+  brocoli:    { name: 'Brocoli', kcal: 34, p: 2.8, c: 4, f: 0.4, rayon: 'Fruits & légumes', search: 'brocoli', fresh: true, piece: 400, unit: 'tête de brocoli', units: 'têtes de brocoli' },
+  epinards:   { name: "Pousses d'épinards", kcal: 23, p: 2.9, c: 1.4, f: 0.4, rayon: 'Fruits & légumes', search: "pousses d'épinards", off: 'en:spinach-young-leaves', pack: 125, packLabel: 'sachet 125 g' },
+  courgette:  { name: 'Courgette', kcal: 17, p: 1.2, c: 2.5, f: 0.3, rayon: 'Fruits & légumes', search: 'courgette', fresh: true, piece: 250, unit: 'courgette', units: 'courgettes' },
+  poivron:    { name: 'Poivron', kcal: 30, p: 1, c: 5, f: 0.3, rayon: 'Fruits & légumes', search: 'poivron', fresh: true, piece: 180, unit: 'poivron', units: 'poivrons' },
+  tomate:     { name: 'Tomate', kcal: 18, p: 0.9, c: 3, f: 0.2, rayon: 'Fruits & légumes', search: 'tomates', fresh: true, piece: 120, unit: 'tomate', units: 'tomates' },
+  concombre:  { name: 'Concombre', kcal: 13, p: 0.6, c: 2, f: 0.1, rayon: 'Fruits & légumes', search: 'concombre', fresh: true, piece: 350, unit: 'concombre', units: 'concombres' },
+  oignon:     { name: 'Oignon', kcal: 40, p: 1.1, c: 8, f: 0.1, rayon: 'Fruits & légumes', search: 'oignons jaunes', fresh: true, piece: 120, unit: 'oignon', units: 'oignons' },
+  champi:     { name: 'Champignons de Paris', kcal: 22, p: 3, c: 1, f: 0.3, rayon: 'Fruits & légumes', search: 'champignons de paris', off: 'en:champignon-mushrooms', pack: 250, packLabel: 'barquette 250 g' },
+  salade:     { name: 'Salade (mesclun)', kcal: 17, p: 1.4, c: 2, f: 0.2, rayon: 'Fruits & légumes', search: 'mesclun', off: 'en:mesclun', pack: 150, packLabel: 'sachet 150 g' },
+  patatedouce:{ name: 'Patate douce', kcal: 86, p: 1.6, c: 20, f: 0.1, rayon: 'Fruits & légumes', search: 'patate douce', fresh: true },
+  pdt:        { name: 'Pommes de terre', kcal: 80, p: 2, c: 17, f: 0.1, rayon: 'Fruits & légumes', search: 'pommes de terre', fresh: true },
+  avocat:     { name: 'Avocat', kcal: 160, p: 2, c: 2, f: 15, rayon: 'Fruits & légumes', search: 'avocat', fresh: true, piece: 140, unit: 'avocat', units: 'avocats' },
+  banane:     { name: 'Banane', kcal: 90, p: 1.1, c: 20, f: 0.3, rayon: 'Fruits & légumes', search: 'bananes', fresh: true, piece: 120, unit: 'banane', units: 'bananes' },
+  pomme:      { name: 'Pomme', kcal: 52, p: 0.3, c: 12, f: 0.2, rayon: 'Fruits & légumes', search: 'pommes', fresh: true, piece: 150, unit: 'pomme', units: 'pommes' },
+  citron:     { name: 'Citron', kcal: 30, p: 0.7, c: 3, f: 0.3, rayon: 'Fruits & légumes', search: 'citron jaune', fresh: true, piece: 100, unit: 'citron', units: 'citrons' },
+
+  // --- Épicerie
+  vermicelles:{ name: 'Vermicelles de riz', kcal: 360, p: 6, c: 82, f: 0.6, rayon: 'Épicerie', search: 'vermicelles de riz', off: 'en:rice-vermicelli', pack: 250, packLabel: 'paquet 250 g' },
+  laitcoco:   { name: 'Lait de coco allégé', kcal: 75, p: 0.8, c: 2, f: 7, rayon: 'Épicerie', search: 'lait de coco allégé', off: 'en:coconut-milks', pack: 200, packLabel: 'brique 20 cl' },
+  avoine:     { name: "Flocons d'avoine", kcal: 370, p: 13.5, c: 58, f: 7, rayon: 'Épicerie', search: "flocons d'avoine", off: 'en:rolled-oats', pack: 500, packLabel: 'paquet 500 g' },
+  riz:        { name: 'Riz basmati', kcal: 350, p: 8, c: 77, f: 1, rayon: 'Épicerie', search: 'riz basmati', off: 'en:basmati-rices', pack: 1000, packLabel: 'paquet 1 kg' },
+  pates:      { name: 'Pâtes complètes', kcal: 350, p: 13, c: 64, f: 2.5, rayon: 'Épicerie', search: 'pâtes complètes', off: 'en:dried-wholemeal-pasta', pack: 500, packLabel: 'paquet 500 g' },
+  quinoa:     { name: 'Quinoa', kcal: 360, p: 14, c: 60, f: 6, rayon: 'Épicerie', search: 'quinoa', off: 'en:quinoa', pack: 500, packLabel: 'paquet 500 g', cher: true },
+  semoule:    { name: 'Semoule complète', kcal: 350, p: 12, c: 70, f: 2, rayon: 'Épicerie', search: 'semoule complète', off: 'en:wheat-semolinas', pack: 500, packLabel: 'paquet 500 g' },
+  lentilles:  { name: 'Lentilles corail', kcal: 340, p: 24, c: 50, f: 1.5, rayon: 'Épicerie', search: 'lentilles corail', off: 'en:decorticated-red-lentils', pack: 500, packLabel: 'paquet 500 g' },
+  poischiches:{ name: 'Pois chiches (égouttés)', kcal: 120, p: 7, c: 16, f: 2.5, rayon: 'Épicerie', search: 'pois chiches', off: 'en:canned-chickpeas', pack: 265, packLabel: 'boîte 400 g (265 g égouttés)' },
+  harirouges: { name: 'Haricots rouges (égouttés)', kcal: 110, p: 8, c: 14, f: 0.5, rayon: 'Épicerie', search: 'haricots rouges', off: 'en:canned-red-kidney-beans', pack: 250, packLabel: 'boîte 400 g (250 g égouttés)' },
+  mais:       { name: 'Maïs doux', kcal: 80, p: 2.8, c: 14, f: 1.2, rayon: 'Épicerie', search: 'maïs doux', off: 'en:canned-sweet-corn', pack: 285, packLabel: 'boîte 285 g' },
+  tomconc:    { name: 'Tomates concassées', kcal: 25, p: 1.2, c: 4, f: 0.2, rayon: 'Épicerie', search: 'tomates concassées', off: 'en:tomato-pulps', pack: 400, packLabel: 'boîte 400 g' },
+  galettes:   { name: 'Galettes de riz', kcal: 380, p: 8, c: 80, f: 3, rayon: 'Épicerie', search: 'galettes de riz', off: 'en:puffed-rice-cakes', pack: 130, packLabel: 'paquet 130 g' },
+  amandes:    { name: 'Amandes', kcal: 580, p: 21, c: 9, f: 50, rayon: 'Épicerie', search: 'amandes', off: 'en:almonds', pack: 200, packLabel: 'sachet 200 g', cher: true },
+  cacahuete:  { name: 'Beurre de cacahuète', kcal: 600, p: 25, c: 15, f: 50, rayon: 'Épicerie', search: 'beurre de cacahuète', off: 'en:peanut-butters', pack: 350, packLabel: 'pot 350 g' },
+  noix:       { name: 'Cerneaux de noix', kcal: 700, p: 15, c: 7, f: 65, rayon: 'Épicerie', search: 'cerneaux de noix', off: 'en:walnut-kernels', pack: 150, packLabel: 'sachet 150 g', cher: true },
+  chia:       { name: 'Graines de chia', kcal: 490, p: 17, c: 8, f: 31, rayon: 'Épicerie', search: 'graines de chia', off: 'en:chia', pack: 200, packLabel: 'sachet 200 g' },
+
+  // --- Surgelés
+  petitspois: { name: 'Petits pois', kcal: 80, p: 5.5, c: 11, f: 0.5, rayon: 'Surgelés', search: 'petits pois surgelés', pack: 1000, packLabel: 'sachet 1 kg' },
+  legwok:     { name: 'Légumes pour wok', kcal: 35, p: 2, c: 5, f: 0.3, rayon: 'Surgelés', search: 'légumes pour wok surgelés', off: 'en:frozen-mixed-vegetables', pack: 600, packLabel: 'sachet 600 g' },
+  haricotsv:  { name: 'Haricots verts', kcal: 30, p: 2, c: 4.5, f: 0.2, rayon: 'Surgelés', search: 'haricots verts surgelés', off: 'en:frozen-green-beans', pack: 1000, packLabel: 'sachet 1 kg' },
+  fruitsrouges:{ name: 'Fruits rouges', kcal: 45, p: 1, c: 8, f: 0.4, rayon: 'Surgelés', search: 'fruits rouges surgelés', off: 'en:frozen-berries', pack: 500, packLabel: 'sachet 500 g' },
+  edamame:    { name: 'Edamame écossés', kcal: 120, p: 11, c: 9, f: 5, rayon: 'Surgelés', search: 'edamame', off: 'en:frozen-edamame', pack: 400, packLabel: 'sachet 400 g' },
+
+  // --- Boulangerie
+  painburger: { name: 'Pains burger complets', kcal: 260, p: 9, c: 45, f: 4.5, rayon: 'Boulangerie', search: 'pain burger complet', off: 'en:hamburger-buns', piece: 75, unit: 'pain burger', units: 'pains burger', whole: true },
+  pain:       { name: 'Pain de mie complet', kcal: 245, p: 9, c: 42, f: 3, rayon: 'Boulangerie', search: 'pain de mie complet', off: 'en:wholemeal-sliced-breads', pack: 500, packLabel: 'paquet 500 g' },
+  tortilla:   { name: 'Tortillas blé complet', kcal: 300, p: 9, c: 48, f: 7, rayon: 'Boulangerie', search: 'tortillas complètes', off: 'en:wheat-flatbreads', piece: 40, unit: 'tortilla', units: 'tortillas', whole: true },
+
+  // --- Placard
+  miso:       { name: 'Pâte miso', kcal: 200, p: 12, c: 25, f: 6, rayon: 'Placard', search: 'pâte miso', off: 'en:misos', placard: true },
+  huile:      { name: "Huile d'olive", kcal: 900, p: 0, c: 0, f: 100, rayon: 'Placard', search: "huile d'olive", off: 'en:extra-virgin-olive-oils', placard: true },
+  miel:       { name: 'Miel', kcal: 320, p: 0.3, c: 80, f: 0, rayon: 'Placard', search: 'miel', off: 'en:honeys', placard: true },
+  soja:       { name: 'Sauce soja', kcal: 60, p: 8, c: 5, f: 0.5, rayon: 'Placard', search: 'sauce soja', off: 'en:soy-sauces', placard: true },
+  curcuma:    { name: 'Curcuma en poudre', kcal: 350, p: 8, c: 60, f: 10, rayon: 'Placard', search: 'curcuma', off: 'en:turmeric-powder', placard: true },
+  whey:       { name: 'Protéine en poudre (whey)', kcal: 380, p: 78, c: 8, f: 5, rayon: 'Placard', search: 'whey protéine', off: 'en:protein-powders', tags: ['whey', 'lactose'], placard: true, cher: true },
+};
+
+// Types : petitdej | plat (déjeuner ou dîner) | collation
+// anti: true = recette compatible avec le régime anti-inflammatoire : poissons gras (oméga-3),
+// fruits rouges, légumes verts, légumineuses, céréales complètes, huile d'olive, noix, curcuma ;
+// pas de viande rouge, de charcuterie ni de sucres ajoutés.
+// Quantités en grammes pour UNE portion de base : l'algorithme les ajuste ensuite.
+const RECIPES = [
+  // ---------- Petits-déjeuners
+  { id: 'porridge', type: 'petitdej', name: 'Porridge protéiné banane', time: 5,
+    ingredients: [['avoine', 60], ['lait', 200], ['whey', 25], ['banane', 100]],
+    steps: "Cuire les flocons dans le lait 3 min, hors du feu ajouter la whey, puis la banane en rondelles." },
+  { id: 'omelette-epinards', anti: true, type: 'petitdej', name: 'Omelette aux épinards & pain complet', time: 10,
+    ingredients: [['oeufs', 150], ['epinards', 80], ['pain', 60], ['huile', 5]],
+    steps: "Faire tomber les épinards dans l'huile, ajouter les œufs battus, cuire 3 min. Servir avec le pain grillé." },
+  { id: 'skyr-bowl', anti: true, type: 'petitdej', name: 'Skyr bowl fruits rouges & amandes', time: 3,
+    ingredients: [['skyr', 250], ['fruitsrouges', 100], ['avoine', 30], ['amandes', 15], ['miel', 10]],
+    steps: "Verser le skyr dans un bol, ajouter les fruits décongelés, les flocons, les amandes concassées et le miel." },
+  { id: 'tartines-avocat', type: 'petitdej', name: 'Tartines avocat & œufs', time: 10,
+    ingredients: [['pain', 70], ['avocat', 70], ['oeufs', 100]],
+    steps: "Écraser l'avocat sur le pain grillé, ajouter les œufs mollets (6 min) ou au plat, sel, poivre." },
+  { id: 'pancakes', type: 'petitdej', name: "Pancakes à l'avoine", time: 15,
+    ingredients: [['avoine', 50], ['oeufs', 100], ['blancoeuf', 100], ['banane', 60], ['fruitsrouges', 80]],
+    steps: "Mixer avoine, œufs, blancs et banane. Cuire de petites louches à la poêle, servir avec les fruits rouges." },
+  { id: 'overnight-oats', anti: true, type: 'petitdej', name: 'Overnight oats chia & pomme', time: 5,
+    ingredients: [['avoine', 50], ['skyr', 150], ['lait', 100], ['chia', 10], ['pomme', 100]],
+    steps: "La veille, mélanger avoine, skyr, lait et chia dans un bocal. Le matin, ajouter la pomme râpée." },
+  { id: 'tartines-jambon', type: 'petitdej', name: 'Tartines jambon & cottage cheese', time: 5,
+    ingredients: [['pain', 70], ['cottage', 150], ['jambon', 40], ['tomate', 80]],
+    steps: "Tartiner le cottage sur le pain, ajouter le jambon et les rondelles de tomate." },
+  { id: 'tofu-brouille', anti: true, type: 'petitdej', name: 'Tofu brouillé aux épinards', time: 10,
+    ingredients: [['tofu', 150], ['epinards', 60], ['pain', 60], ['tomate', 80], ['huile', 5]],
+    steps: "Émietter le tofu dans l'huile chaude avec curcuma et sel, ajouter épinards et tomate. Servir sur pain grillé." },
+  { id: 'porridge-curcuma', anti: true, type: 'petitdej', name: 'Porridge doré curcuma, noix & fruits rouges', time: 7,
+    ingredients: [['avoine', 50], ['lait', 200], ['skyr', 100], ['fruitsrouges', 80], ['noix', 15], ['curcuma', 2]],
+    steps: "Cuire l'avoine dans le lait avec le curcuma et une pincée de poivre (il aide à l'absorber). Ajouter le skyr, les fruits rouges et les noix." },
+  { id: 'tartines-saumon', anti: true, type: 'petitdej', name: 'Tartines saumon fumé & concombre', time: 5,
+    ingredients: [['pain', 70], ['saumonfume', 60], ['fromblanc', 50], ['concombre', 50]],
+    steps: "Tartiner le pain grillé de fromage blanc citronné, ajouter le saumon et les rondelles de concombre." },
+  { id: 'smoothie-bowl', anti: true, type: 'petitdej', name: 'Smoothie bowl protéiné', time: 5,
+    ingredients: [['skyr', 200], ['banane', 100], ['fruitsrouges', 100], ['avoine', 30]],
+    steps: 'Mixer le skyr avec la banane et les fruits rouges encore congelés. Verser dans un bol et parsemer de flocons.' },
+  { id: 'muffins-oeufs', type: 'petitdej', name: 'Muffins œufs, poivron & mozzarella', time: 25,
+    ingredients: [['oeufs', 150], ['poivron', 50], ['epinards', 30], ['mozza', 30], ['pain', 40]],
+    steps: 'Battre les œufs, ajouter les légumes en petits dés et la mozzarella. Cuire 18 min à 180 °C en moules à muffins. Se gardent 3 jours au frigo.' },
+  { id: 'granola-skyr', type: 'petitdej', name: 'Skyr, granola express & pomme', time: 10,
+    ingredients: [['skyr', 200], ['avoine', 40], ['amandes', 10], ['miel', 10], ['pomme', 100]],
+    steps: "Dorer 5 min à la poêle l'avoine et les amandes concassées avec le miel. Servir sur le skyr avec la pomme en dés." },
+  { id: 'crepes-proteinees', type: 'petitdej', name: 'Crêpes protéinées aux fruits rouges', time: 15,
+    ingredients: [['blancoeuf', 100], ['oeufs', 50], ['lait', 100], ['avoine', 40], ['fruitsrouges', 80]],
+    steps: "Mixer blancs, œuf, lait et avoine. Cuire des crêpes fines à la poêle antiadhésive. Garnir de fruits rouges chauds." },
+  { id: 'tartines-houmous', type: 'petitdej', name: 'Tartines houmous & œufs mollets', time: 10,
+    ingredients: [['pain', 70], ['houmous', 30], ['oeufs', 100], ['tomate', 60]],
+    steps: 'Tartiner le pain grillé de houmous, ajouter les œufs mollets (6 min) et la tomate. Poivre, paprika.' },
+  { id: 'porridge-pb', type: 'petitdej', name: 'Porridge banane & beurre de cacahuète', time: 5,
+    ingredients: [['avoine', 60], ['lait', 200], ['whey', 20], ['banane', 60], ['cacahuete', 15]],
+    steps: "Cuire l'avoine dans le lait, ajouter la whey hors du feu, puis la banane et une cuillère de beurre de cacahuète." },
+  { id: 'skyr-mangue', type: 'petitdej', name: 'Bowl skyr, mangue & chia', time: 5,
+    ingredients: [['skyr', 200], ['mangue', 100], ['avoine', 30], ['chia', 10]],
+    steps: 'Mélanger le skyr et les graines de chia, ajouter la mangue en cubes et les flocons.' },
+
+  // ---------- Plats (déjeuner / dîner)
+  { id: 'poulet-riz', type: 'plat', name: 'Poulet, riz basmati & brocoli', time: 25,
+    ingredients: [['poulet', 150], ['riz', 70], ['brocoli', 150], ['huile', 8], ['soja', 10]],
+    steps: "Cuire le riz. Saisir le poulet en dés 6-8 min, ajouter la sauce soja. Brocoli vapeur 6 min." },
+  { id: 'bowl-saumon', anti: true, type: 'plat', name: 'Bowl saumon, quinoa & avocat', time: 20,
+    ingredients: [['saumon', 120], ['quinoa', 60], ['avocat', 50], ['concombre', 80], ['edamame', 50], ['soja', 10]],
+    steps: "Cuire le quinoa et les edamame. Cuire le saumon 10 min au four à 200 °C. Assembler avec avocat et concombre." },
+  { id: 'chili', type: 'plat', name: 'Chili con carne', time: 30,
+    ingredients: [['boeuf', 130], ['harirouges', 120], ['tomconc', 150], ['oignon', 50], ['mais', 50], ['riz', 50]],
+    steps: "Revenir l'oignon et le bœuf, ajouter tomates, haricots, maïs, cumin et paprika. Mijoter 15 min. Servir avec le riz." },
+  { id: 'pates-thon', type: 'plat', name: 'Pâtes complètes thon & tomate', time: 20,
+    ingredients: [['pates', 80], ['thon', 120], ['tomconc', 150], ['oignon', 40], ['huile', 8], ['parmesan', 10]],
+    steps: "Faire une sauce oignon + tomates 10 min, ajouter le thon. Mélanger aux pâtes, parsemer de parmesan." },
+  { id: 'dahl', anti: true, type: 'plat', name: 'Dahl de lentilles corail', time: 25,
+    ingredients: [['lentilles', 90], ['tomconc', 150], ['oignon', 50], ['epinards', 80], ['riz', 40], ['huile', 8], ['curcuma', 2]],
+    steps: "Revenir l'oignon avec curry et cumin, ajouter lentilles, tomates et 2 fois leur volume d'eau. Cuire 15 min, ajouter les épinards." },
+  { id: 'cabillaud', anti: true, type: 'plat', name: 'Cabillaud, patate douce & haricots verts', time: 30,
+    ingredients: [['cabillaud', 180], ['patatedouce', 250], ['haricotsv', 150], ['huile', 10], ['citron', 30]],
+    steps: "Rôtir la patate douce en cubes 25 min à 200 °C. Cuire le cabillaud 12 min au four avec citron. Haricots vapeur." },
+  { id: 'wrap-dinde', type: 'plat', name: 'Wraps dinde & crudités', time: 15,
+    ingredients: [['tortilla', 80], ['dinde', 130], ['fromblanc', 50], ['salade', 30], ['tomate', 80], ['poivron', 60]],
+    steps: "Griller la dinde en lanières. Tartiner les tortillas de fromage blanc aux herbes, garnir et rouler." },
+  { id: 'curry-tofu', anti: true, type: 'plat', name: 'Curry de pois chiches & tofu', time: 25,
+    ingredients: [['tofu', 150], ['poischiches', 150], ['tomconc', 100], ['courgette', 150], ['riz', 50], ['huile', 8], ['curcuma', 2]],
+    steps: "Dorer le tofu en cubes, ajouter courgette, pois chiches, tomates et curry. Mijoter 10 min. Servir avec le riz." },
+  { id: 'steak-pdt', type: 'plat', name: 'Steak haché, pommes de terre & salade', time: 25,
+    ingredients: [['boeuf', 150], ['pdt', 250], ['salade', 50], ['huile', 10]],
+    steps: "Rôtir les pommes de terre en quartiers 25 min. Cuire le steak à la poêle. Salade avec 1 c. à café d'huile." },
+  { id: 'crevettes-semoule', anti: true, type: 'plat', name: 'Poêlée crevettes, courgettes & semoule', time: 15,
+    ingredients: [['crevettes', 150], ['semoule', 70], ['courgette', 200], ['poivron', 100], ['huile', 10]],
+    steps: "Réhydrater la semoule. Sauter courgettes et poivron 8 min, ajouter les crevettes 2 min avec ail et paprika." },
+  { id: 'salade-quinoa', anti: true, type: 'plat', name: 'Salade quinoa, feta & œufs', time: 20,
+    ingredients: [['quinoa', 60], ['oeufs', 100], ['feta', 40], ['concombre', 100], ['tomate', 100], ['poischiches', 80], ['huile', 8]],
+    steps: "Cuire le quinoa et les œufs durs (10 min). Mélanger avec les légumes, les pois chiches et la feta émiettée." },
+  { id: 'dinde-champi', type: 'plat', name: 'Dinde aux champignons & pâtes', time: 20,
+    ingredients: [['dinde', 150], ['pates', 70], ['champi', 150], ['fromblanc', 60], ['oignon', 40]],
+    steps: "Dorer dinde et oignon, ajouter les champignons 5 min. Hors du feu, lier avec le fromage blanc. Servir avec les pâtes." },
+  { id: 'frittata', type: 'plat', name: 'Frittata courgette & poivron', time: 20,
+    ingredients: [['oeufs', 200], ['courgette', 150], ['poivron', 80], ['parmesan', 15], ['pain', 60]],
+    steps: "Faire revenir les légumes, verser les œufs battus avec le parmesan, cuire à couvert 10 min. Servir avec le pain." },
+  { id: 'saumon-pdt', anti: true, type: 'plat', name: 'Saumon, pommes de terre & brocoli', time: 25,
+    ingredients: [['saumon', 130], ['pdt', 200], ['brocoli', 150], ['citron', 20]],
+    steps: "Cuire pommes de terre et brocoli à la vapeur. Saumon 12 min au four à 200 °C, arroser de citron." },
+  { id: 'buddha-tofu', anti: true, type: 'plat', name: 'Buddha bowl tofu & edamame', time: 20,
+    ingredients: [['tofu', 150], ['edamame', 100], ['quinoa', 50], ['concombre', 80], ['avocat', 40], ['soja', 10]],
+    steps: "Cuire le quinoa et les edamame. Dorer le tofu à la sauce soja. Assembler avec concombre et avocat." },
+  { id: 'salade-sardines', anti: true, type: 'plat', name: 'Salade tiède lentilles, sardines & épinards', time: 20,
+    ingredients: [['lentilles', 70], ['sardines', 100], ['epinards', 60], ['tomate', 100], ['oignon', 30], ['huile', 8], ['citron', 20]],
+    steps: "Cuire les lentilles 12 min. Mélanger avec les épinards, la tomate et l'oignon émincé. Ajouter les sardines, puis arroser de citron et d'huile d'olive." },
+  { id: 'saumon-quinoa', anti: true, type: 'plat', name: 'Saumon citron-gingembre, quinoa & brocoli', time: 25,
+    ingredients: [['saumon', 130], ['quinoa', 60], ['brocoli', 150], ['citron', 20], ['soja', 5]],
+    steps: "Cuire le quinoa et le brocoli vapeur. Saumon 12 min à 200 °C avec citron, sauce soja et gingembre râpé." },
+  { id: 'poischiches-patate', anti: true, type: 'plat', name: 'Poêlée pois chiches, patate douce & œufs pochés au curcuma', time: 25,
+    ingredients: [['poischiches', 150], ['patatedouce', 200], ['epinards', 100], ['oeufs', 100], ['huile', 8], ['curcuma', 2]],
+    steps: "Poêler la patate douce en dés 12 min, ajouter les pois chiches, le curcuma et les épinards. Servir avec les œufs pochés (3 min)." },
+  { id: 'poulet-curcuma', anti: true, type: 'plat', name: 'Poulet curcuma, riz & légumes du soleil', time: 25,
+    ingredients: [['poulet', 150], ['riz', 60], ['courgette', 150], ['poivron', 80], ['huile', 8], ['curcuma', 2]],
+    steps: "Cuire le riz. Saisir le poulet en dés avec le curcuma, ajouter courgette et poivron, puis cuire 8 min à couvert." },
+  { id: 'burger-maison', type: 'plat', name: 'Burger maison & frites de patate douce', time: 30,
+    ingredients: [['painburger', 75], ['boeuf', 125], ['mozza', 30], ['salade', 20], ['tomate', 50], ['oignon', 20], ['patatedouce', 150], ['huile', 5]],
+    steps: "Frites de patate douce au four 25 min à 210 °C avec l'huile. Cuire le steak, monter le burger avec la mozzarella fondue, la salade, la tomate et l'oignon." },
+  { id: 'pizza-tortilla', type: 'plat', name: 'Pizza express sur tortilla', time: 15,
+    ingredients: [['tortilla', 80], ['tomconc', 80], ['mozza', 60], ['jambon', 60], ['champi', 60]],
+    steps: 'Étaler la tomate sur les tortillas, garnir de jambon, champignons et mozzarella. 8 min au four à 220 °C.' },
+  { id: 'fajitas', type: 'plat', name: 'Fajitas de poulet', time: 20,
+    ingredients: [['tortilla', 80], ['poulet', 140], ['poivron', 100], ['oignon', 50], ['fromblanc', 50], ['huile', 5]],
+    steps: 'Saisir poulet, poivron et oignon en lanières avec cumin et paprika fumé. Garnir les tortillas et ajouter le fromage blanc citronné.' },
+  { id: 'poke-thon', type: 'plat', name: 'Poke bowl thon & mangue', time: 15,
+    ingredients: [['riz', 60], ['thon', 120], ['mangue', 80], ['concombre', 80], ['edamame', 50], ['soja', 10]],
+    steps: 'Cuire le riz et les edamame. Disposer en bol avec le thon, la mangue et le concombre. Arroser de sauce soja.' },
+  { id: 'soupe-miso', anti: true, type: 'plat', name: 'Soupe miso, tofu & vermicelles', time: 10,
+    ingredients: [['miso', 20], ['tofu', 150], ['vermicelles', 40], ['epinards', 60], ['champi', 50]],
+    steps: "Chauffer 50 cl d'eau sans la faire bouillir, délayer le miso. Ajouter le tofu en dés, les champignons, les vermicelles et les épinards : 4 min." },
+  { id: 'bouillon-poulet', anti: true, type: 'plat', name: 'Bouillon de poulet, vermicelles & légumes', time: 25,
+    ingredients: [['poulet', 130], ['vermicelles', 50], ['carotte', 100], ['courgette', 100], ['oignon', 30]],
+    steps: "Pocher le poulet 15 min dans 60 cl d'eau avec l'oignon, les carottes et un cube de bouillon. Effilocher, ajouter la courgette et les vermicelles : 4 min." },
+  { id: 'riz-cantonais', type: 'plat', name: 'Riz cantonais aux crevettes', time: 20,
+    ingredients: [['riz', 70], ['crevettes', 100], ['oeufs', 100], ['petitspois', 60], ['oignon', 20], ['huile', 8], ['soja', 10]],
+    steps: 'Cuire le riz (idéalement la veille). Brouiller les œufs au wok, ajouter les petits pois, les crevettes, le riz et la sauce soja : 5 min à feu vif.' },
+  { id: 'pad-thai', type: 'plat', name: 'Pad thaï aux crevettes', time: 20,
+    ingredients: [['vermicelles', 70], ['crevettes', 130], ['oeufs', 50], ['cacahuete', 10], ['carotte', 60], ['soja', 10], ['citron', 20], ['huile', 5]],
+    steps: 'Réhydrater les vermicelles. Sauter les crevettes et la carotte râpée, pousser sur le côté pour brouiller l’œuf. Ajouter les nouilles, la sauce soja, le beurre de cacahuète détendu et le citron.' },
+  { id: 'poulet-tikka', anti: true, type: 'plat', name: 'Poulet tikka & riz basmati', time: 30,
+    ingredients: [['poulet', 150], ['skyr', 80], ['tomconc', 100], ['oignon', 40], ['riz', 60], ['curcuma', 2]],
+    steps: 'Mariner le poulet dans le skyr avec curcuma, garam masala et ail. Le saisir, ajouter oignon et tomates, mijoter 12 min. Servir avec le riz.' },
+  { id: 'hachis-patate', type: 'plat', name: 'Hachis parmentier de patate douce', time: 45,
+    ingredients: [['boeuf', 130], ['patatedouce', 250], ['oignon', 40], ['carotte', 60], ['mozza', 20]],
+    steps: 'Cuire la patate douce et l’écraser en purée. Revenir oignon, carotte râpée et bœuf. Monter en plat, couvrir de purée et de mozzarella, gratiner 20 min à 200 °C.' },
+  { id: 'wok-boeuf', type: 'plat', name: 'Wok de bœuf aux légumes', time: 15,
+    ingredients: [['boeufemince', 140], ['legwok', 200], ['riz', 60], ['soja', 10], ['huile', 8]],
+    steps: 'Saisir le bœuf 2 min à feu très vif et le réserver. Sauter les légumes 5 min, remettre le bœuf avec la sauce soja et du gingembre. Servir avec le riz.' },
+  { id: 'filet-mignon', type: 'plat', name: 'Filet mignon, purée de patate douce & haricots verts', time: 35,
+    ingredients: [['porc', 150], ['patatedouce', 200], ['haricotsv', 150], ['lait', 30], ['huile', 5]],
+    steps: 'Dorer le filet mignon puis le finir 15 min au four à 180 °C. Purée de patate douce au lait, haricots verts vapeur.' },
+  { id: 'salade-nicoise', anti: true, type: 'plat', name: 'Salade niçoise protéinée', time: 20,
+    ingredients: [['thon', 100], ['oeufs', 100], ['haricotsv', 100], ['pdt', 150], ['tomate', 100], ['salade', 30], ['huile', 8]],
+    steps: "Cuire pommes de terre, haricots verts et œufs durs. Assembler avec la salade, la tomate et le thon. Vinaigrette à l'huile d'olive." },
+  { id: 'maquereau-lentilles', anti: true, type: 'plat', name: 'Maquereau, lentilles & carottes au cumin', time: 20,
+    ingredients: [['maquereau', 100], ['lentilles', 60], ['carotte', 100], ['oignon', 30], ['citron', 20]],
+    steps: 'Cuire les lentilles 12 min avec les carottes en rondelles et le cumin. Ajouter l’oignon émincé, le maquereau émietté et le citron.' },
+  { id: 'chili-sin-carne', anti: true, type: 'plat', name: 'Chili sin carne', time: 30,
+    ingredients: [['harirouges', 150], ['lentilles', 40], ['tomconc', 150], ['poivron', 80], ['oignon', 40], ['mais', 50], ['riz', 50]],
+    steps: 'Revenir oignon et poivron, ajouter lentilles, tomates, haricots, maïs, cumin et paprika + 15 cl d’eau. Mijoter 20 min. Servir avec le riz.' },
+  { id: 'curry-coco-poulet', type: 'plat', name: 'Curry coco de poulet & légumes', time: 25,
+    ingredients: [['poulet', 140], ['laitcoco', 100], ['legwok', 150], ['riz', 60], ['curcuma', 2]],
+    steps: 'Dorer le poulet avec la pâte de curry et le curcuma, ajouter les légumes puis le lait de coco. Mijoter 10 min. Servir avec le riz.' },
+  { id: 'tortilla-espagnole', type: 'plat', name: 'Tortilla espagnole & salade', time: 35,
+    ingredients: [['oeufs', 200], ['pdt', 200], ['oignon', 50], ['huile', 8], ['salade', 50]],
+    steps: 'Cuire doucement pommes de terre et oignon en fines tranches 15 min. Verser les œufs battus, cuire 8 min, retourner, 3 min. Servir tiède avec la salade.' },
+  { id: 'salade-cesar', type: 'plat', name: 'Salade César allégée', time: 15,
+    ingredients: [['poulet', 130], ['salade', 80], ['parmesan', 15], ['pain', 30], ['fromblanc', 50], ['tomate', 80]],
+    steps: 'Griller le poulet et le pain en croûtons. Sauce : fromage blanc, citron, moutarde, parmesan. Mélanger avec la salade et la tomate.' },
+
+  // ---------- Collations
+  { id: 'skyr-miel', type: 'collation', name: 'Skyr & miel', time: 1,
+    ingredients: [['skyr', 200], ['miel', 10]], steps: 'Mélanger.' },
+  { id: 'shake', type: 'collation', name: 'Shake whey banane', time: 2,
+    ingredients: [['whey', 30], ['lait', 250], ['banane', 100]], steps: 'Mixer le tout 30 secondes.' },
+  { id: 'galettes-pb', type: 'collation', name: 'Galettes de riz, beurre de cacahuète & cottage', time: 2,
+    ingredients: [['galettes', 24], ['cacahuete', 15], ['cottage', 100]], steps: 'Tartiner les galettes, cottage à côté.' },
+  { id: 'fromblanc-fruits', anti: true, type: 'collation', name: 'Fromage blanc, fruits rouges & amandes', time: 2,
+    ingredients: [['fromblanc', 200], ['fruitsrouges', 80], ['amandes', 15]], steps: 'Mélanger.' },
+  { id: 'oeufs-pomme', anti: true, type: 'collation', name: 'Œufs durs & pomme', time: 10,
+    ingredients: [['oeufs', 100], ['pomme', 150]], steps: 'Œufs durs 10 min (à préparer à l’avance).' },
+  { id: 'edamame', anti: true, type: 'collation', name: 'Edamame au sel', time: 5,
+    ingredients: [['edamame', 150]], steps: 'Cuire 4 min à l’eau bouillante, saler.' },
+  { id: 'fromblanc-pomme-noix', anti: true, type: 'collation', name: 'Fromage blanc, pomme & noix', time: 2,
+    ingredients: [['fromblanc', 150], ['pomme', 150], ['noix', 20]], steps: 'Couper la pomme en dés, mélanger avec le fromage blanc et les noix, ajouter de la cannelle.' },
+  { id: 'houmous-crudites', anti: true, type: 'collation', name: 'Houmous & bâtonnets de crudités', time: 5,
+    ingredients: [['houmous', 50], ['carotte', 100], ['concombre', 100]], steps: 'Couper carotte et concombre en bâtonnets, tremper dans le houmous.' },
+  { id: 'energy-balls', type: 'collation', name: 'Energy balls avoine-cacahuète', time: 10,
+    ingredients: [['avoine', 30], ['cacahuete', 15], ['whey', 15], ['miel', 5]], steps: 'Mélanger, former 4 boules, 20 min au frigo. Se gardent 5 jours.' },
+  { id: 'pomme-pb', type: 'collation', name: 'Pomme & beurre de cacahuète', time: 2,
+    ingredients: [['pomme', 150], ['cacahuete', 15]], steps: 'Couper la pomme en quartiers à tremper dans le beurre de cacahuète.' },
+  { id: 'smoothie-vert', type: 'collation', name: 'Smoothie vert protéiné', time: 3,
+    ingredients: [['epinards', 30], ['banane', 100], ['lait', 200], ['whey', 20]], steps: 'Mixer 1 minute. Les épinards ne se sentent pas !' },
+  { id: 'cottage-concombre', anti: true, type: 'collation', name: 'Cottage cheese & concombre', time: 3,
+    ingredients: [['cottage', 150], ['concombre', 100]], steps: 'Concombre en dés, poivre, ciboulette.' },
+];
+
+// ============================================================
+//  Étiquettes utilisées par le quiz « Nos envies de la semaine »
+//  (« iodé » et « végétal » sont déduits automatiquement des ingrédients)
+// ============================================================
+const RECIPE_FLAGS = {
+  // Ambiances
+  frais: ['bowl-saumon', 'salade-quinoa', 'salade-sardines', 'wrap-dinde', 'buddha-tofu', 'crevettes-semoule', 'poke-thon',
+    'salade-nicoise', 'salade-cesar', 'saumon-quinoa', 'maquereau-lentilles', 'smoothie-bowl', 'skyr-mangue', 'skyr-bowl',
+    'cottage-concombre', 'houmous-crudites', 'fromblanc-fruits'],
+  reconfort: ['chili', 'pates-thon', 'dahl', 'steak-pdt', 'dinde-champi', 'frittata', 'poischiches-patate', 'bouillon-poulet',
+    'soupe-miso', 'hachis-patate', 'filet-mignon', 'tortilla-espagnole', 'burger-maison', 'curry-coco-poulet', 'saumon-pdt',
+    'cabillaud', 'porridge', 'porridge-pb', 'porridge-curcuma', 'crepes-proteinees', 'pancakes'],
+  epice: ['chili', 'dahl', 'curry-tofu', 'poulet-curcuma', 'fajitas', 'pad-thai', 'poulet-tikka', 'chili-sin-carne',
+    'curry-coco-poulet', 'wok-boeuf', 'maquereau-lentilles'],
+  // Se transporte bien dans une lunch box (se mange froid ou se réchauffe bien)
+  box: ['salade-quinoa', 'salade-sardines', 'wrap-dinde', 'bowl-saumon', 'buddha-tofu', 'curry-tofu', 'chili', 'pates-thon',
+    'dahl', 'poke-thon', 'riz-cantonais', 'hachis-patate', 'salade-nicoise', 'maquereau-lentilles', 'chili-sin-carne',
+    'tortilla-espagnole', 'salade-cesar', 'crevettes-semoule', 'poulet-riz', 'poulet-curcuma', 'frittata', 'curry-coco-poulet'],
+  // Lendemain de soirée : hydratant, digeste, riche en protéines, peu gras
+  recup: ['porridge', 'skyr-bowl', 'tartines-avocat', 'omelette-epinards', 'smoothie-bowl', 'overnight-oats', 'skyr-mangue',
+    'bouillon-poulet', 'soupe-miso', 'poulet-riz', 'cabillaud', 'saumon-pdt', 'poke-thon', 'dahl', 'saumon-quinoa',
+    'shake', 'skyr-miel', 'smoothie-vert', 'oeufs-pomme', 'fromblanc-fruits', 'cottage-concombre'],
+  // Petit plaisir du week-end
+  plaisir: ['burger-maison', 'pizza-tortilla', 'fajitas', 'riz-cantonais', 'chili', 'wrap-dinde', 'pad-thai', 'curry-coco-poulet'],
+};
+
+// ============================================================
+//  Prix indicatifs en € par kg (ou par litre), ordre de grandeur
+//  d'un hypermarché E.Leclerc en 2026. Servent à estimer le coût
+//  du menu et à respecter la tranche de budget choisie. Les prix
+//  réels du magasin les remplacent après la vérification du stock.
+// ============================================================
+const PRICES = {
+  // Viandes & poissons
+  poulet: 11, dinde: 11, boeuf: 12, boeufemince: 20, porc: 15, jambon: 14,
+  saumon: 22, saumonfume: 35, cabillaud: 17, crevettes: 22, thon: 13, sardines: 12, maquereau: 12,
+  // Crèmerie & œufs
+  oeufs: 6, blancoeuf: 5, skyr: 3.2, fromblanc: 2.2, cottage: 6, lait: 1, feta: 10, parmesan: 20,
+  mozza: 8, houmous: 10, tofu: 9,
+  // Fruits & légumes
+  brocoli: 3, epinards: 10, courgette: 2.5, poivron: 4, tomate: 3, concombre: 2.5, oignon: 2, champi: 5,
+  salade: 8, patatedouce: 3, pdt: 1.3, avocat: 7, banane: 1.8, pomme: 2.5, citron: 3.5, carotte: 1.5, mangue: 5,
+  // Épicerie
+  avoine: 2.2, riz: 3, pates: 2.4, quinoa: 7, semoule: 2.2, lentilles: 4, poischiches: 3, harirouges: 3,
+  mais: 3.5, tomconc: 2, galettes: 9, amandes: 14, cacahuete: 7, chia: 10, noix: 20, vermicelles: 6, laitcoco: 4,
+  // Surgelés
+  haricotsv: 2.5, fruitsrouges: 6, edamame: 7, petitspois: 2.5, legwok: 3.5,
+  // Boulangerie
+  pain: 3.2, tortilla: 7, painburger: 5,
+  // Placard
+  huile: 9, miel: 10, soja: 7, curcuma: 40, miso: 15, whey: 25,
+};

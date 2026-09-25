@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5cb85c"/>
+      <stop offset="0.55" stop-color="#3aa564"/>
+      <stop offset="1" stop-color="#23703f"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.85" cy="0.1" r="0.55">
+      <stop offset="0" stop-color="#f6c945" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#f6c945" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="flesh" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f3f9c8"/>
+      <stop offset="1" stop-color="#d6ec8a"/>
+    </linearGradient>
+  </defs>
+  <!-- Fond plein (l'OS arrondit les coins lui-même) -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <rect width="512" height="512" fill="url(#sun)"/>
+  <!-- Avocat, centré dans la zone de sécurité (≈ 60 % du carré) -->
+  <g transform="rotate(-14 256 270)">
+    <path d="M256 104 C212 104 200 170 184 222 C160 296 190 402 256 402 C322 402 352 296 328 222 C312 170 300 104 256 104 Z"
+          fill="#2f6b1f" stroke="#1d4a12" stroke-width="10"/>
+    <path d="M256 130 C224 130 216 186 202 232 C184 294 208 380 256 380 C304 380 328 294 310 232 C296 186 288 130 256 130 Z"
+          fill="url(#flesh)"/>
+    <circle cx="256" cy="300" r="46" fill="#9a6232"/>
+    <circle cx="256" cy="300" r="46" fill="none" stroke="#6e4220" stroke-width="6"/>
+    <ellipse cx="240" cy="284" rx="13" ry="9" fill="#c98b54" opacity=".8"/>
+  </g>
+  <!-- Petite feuille -->
+  <path d="M222 110 Q262 58 318 66 Q298 124 222 110 Z" fill="#9bc53d" stroke="#4f7a1f" stroke-width="6" stroke-linejoin="round"/>
+</svg>
