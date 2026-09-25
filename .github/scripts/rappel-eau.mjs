@@ -41,8 +41,9 @@ const manual = process.env.GITHUB_EVENT_NAME === 'workflow_dispatch'; // bouton 
 
 const privateKey = process.env.VAPID_PRIVATE_KEY;
 if (!privateKey) {
-  console.error('Secret VAPID_PRIVATE_KEY manquant.');
-  process.exit(1);
+  // Pas encore configuré : on s'arrête sans erreur (évite un e-mail d'échec toutes les heures)
+  console.log('Secret VAPID_PRIVATE_KEY pas encore ajouté : aucun rappel envoyé.');
+  process.exit(0);
 }
 webpush.setVapidDetails(APP_URL, VAPID_PUBLIC_KEY, privateKey.trim());
 
