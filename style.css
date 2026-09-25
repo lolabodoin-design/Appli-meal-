@@ -457,6 +457,25 @@ button:active { transform: scale(.97); }
 .custom-chip.none { background: var(--surface-2); color: var(--muted); }
 .custom-chip button { background: none; padding: 0 6px; font-size: .8rem; color: inherit; }
 
+/* ---------- Le savais-tu ? / Pourquoi ? */
+.tip { margin-top: 8px; padding: 9px 12px; border-radius: 12px; background: #fff6d8; color: #5b4a12; font-size: .84rem; line-height: 1.45; }
+.tip ul { margin: 4px 0 0; padding-left: 18px; }
+.recup-tip { background: #e3f3fb; color: #1d5f7e; }
+.why { margin-top: 6px; font-weight: 600; }
+.why summary { cursor: pointer; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; width: fit-content; }
+.why p { margin: 6px 0 0; font-weight: 600; line-height: 1.45; }
+.meal.external .why { font-size: .84rem; color: var(--muted); }
+.fact-card {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center;
+  background: linear-gradient(135deg, #fff6d8, #fdf0c4); color: #5b4a12; border-radius: 18px; padding: 12px 14px; margin-bottom: 16px;
+}
+.fact-card p { margin: 0; font-size: .9rem; line-height: 1.45; }
+.fact-icon { font-size: 1.6rem; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tip, :root:not([data-theme="light"]) .fact-card { background: #33301a; color: #f0e2a8; }
+  :root:not([data-theme="light"]) .recup-tip { background: #16323d; color: #9fd4ea; }
+}
+
 /* ---------- Budget */
 .budget-row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; margin: 4px 0 10px; font-weight: 800; }
 .budget-row b { font-family: var(--font-title); font-size: 1.2rem; color: var(--leaf-dark); }

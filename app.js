@@ -1026,12 +1026,31 @@ function renderExternalMeal(meal) {
       <div class="meal-top"><span class="meal-slot">${SLOTS[meal.slot].icon} ${SLOTS[meal.slot].label}</span></div>
       <div class="ext-title">${ext.icon} ${ext.label} : pas de cuisine !</div>
       <p class="steps">${esc(ext.tip)}</p>
+      ${meal.external === 'cantine' ? whyBox(WHY.cantine) : ''}
       ${eaters.map(({ p, detail }) => `<div class="macros">${who(p)} <span>≈ ${Math.round(detail.totals.kcal)} kcal estimées</span></div>`).join('')}
     </div>`;
 }
 
+// « Le savais-tu ? » d'une recette : l'info du premier ingrédient principal qui en a une
+function recipeFact(recipe) {
+  const ids = recipe.ingredients.map(([id]) => id).filter(id => FACTS[id]);
+  const main = ids.find(id => !INGREDIENTS[id].placard) || ids[0];
+  return main ? FACTS[main] : '';
+}
+
+// Lendemain de soirée : ce qui rend cette recette adaptée, ingrédient par ingrédient
+function recupReasons(recipe) {
+  return recipe.ingredients
+    .filter(([id]) => RECUP_TIPS[id])
+    .map(([id]) => `<li><b>${esc(INGREDIENTS[id].name)}</b> : ${esc(RECUP_TIPS[id])}</li>`)
+    .join('');
+}
+
+// Bouton « Pourquoi ? » dépliable
+const whyBox = text => `<details class="why"><summary>Pourquoi ?</summary><p>${esc(text)}</p></details>`;
+
 // Tableau des quantités d'une recette pour un groupe de convives (+ total à cuisiner)
-function recipeDetails(recipe, eaters) {
+function recipeDetails(recipe, eaters, ctx = {}) {
   const showTotal = eaters.length > 1;
   const rows = recipe.ingredients.map(([id], k) => {
     const ing = INGREDIENTS[id];
@@ -1047,6 +1066,8 @@ function recipeDetails(recipe, eaters) {
         <tbody>${rows}</tbody>
       </table>
       <p class="steps">${esc(recipe.steps)}</p>
+      ${ctx.lendemain && recupReasons(recipe) ? `<div class="tip recup-tip"><b>💧 Pourquoi ce plat aujourd'hui ?</b><ul>${recupReasons(recipe)}</ul></div>` : ''}
+      ${recipeFact(recipe) ? `<div class="tip"><b>💡 Le savais-tu ?</b> ${esc(recipeFact(recipe))}</div>` : ''}
     </details>`;
 }
 
@@ -1065,7 +1086,7 @@ function renderMeal(meal, d, i) {
   const variantBlocks = eaters.filter(({ p }) => meal.variants?.[p.id]).map(x => `
     <div class="variant">
       <span class="variant-label">🔀 Variante pour ${who(x.p)} · ${esc(REGIMES[x.p.regime].label)}</span>
-      ${recipeDetails(recipeOf(meal, x.p.id), [x])}
+      ${recipeDetails(recipeOf(meal, x.p.id), [x], ctx)}
     </div>`).join('');
 
   return `
@@ -1074,7 +1095,7 @@ function renderMeal(meal, d, i) {
         <span class="meal-slot">${SLOTS[meal.slot].icon} ${SLOTS[meal.slot].label} · ${recipe.time} min ${tags}</span>
         <button type="button" class="icon-btn" data-swap="${d},${i}" title="Proposer une autre recette">🔄 changer</button>
       </div>
-      ${common.length ? recipeDetails(recipe, common) : ''}
+      ${common.length ? recipeDetails(recipe, common, ctx) : ''}
       ${variantBlocks}
       ${eaters.map(({ p, detail }) => `<div class="macros">${who(p)} ${macroLine(detail.totals)}</div>`).join('')}
     </div>`;
@@ -1092,12 +1113,17 @@ function personBars(day, d) {
 function dayBanners(d) {
   const ctx = dayContext(d);
   const b = [];
-  if (ctx.lendemain) b.push(['recup', "💧 Lendemain de soirée : plats hydratants et digestes, journée un peu plus légère (-10 % kcal, moins de gras). Pense à boire beaucoup d'eau !"]);
-  if (ctx.event === 'soiree') b.push(['party', '🎉 Soirée ce soir : le petit-déjeuner et le déjeuner sont ajustés pour compenser.']);
-  if (ctx.event === 'restau') b.push(['party', '🍽️ Resto ce soir : les autres repas sont allégés pour compenser.']);
-  if (ctx.plaisir) b.push(['plaisir', '😋 Soirée petit plaisir : un plat gourmand, mais toujours calé sur vos macros.']);
-  return b.map(([cls, text]) => `<div class="day-banner ${cls}">${text}</div>`).join('');
+  if (ctx.lendemain) b.push(['recup', "💧 Lendemain de soirée : plats hydratants et digestes, journée un peu plus légère (-10 % kcal, moins de gras). Pense à boire beaucoup d'eau !", WHY.recup]);
+  if (ctx.event === 'soiree') b.push(['party', '🎉 Soirée ce soir : le petit-déjeuner et le déjeuner sont ajustés pour compenser.', WHY.soiree]);
+  if (ctx.event === 'restau') b.push(['party', '🍽️ Resto ce soir : les autres repas sont allégés pour compenser.', WHY.restau]);
+  if (ctx.plaisir) b.push(['plaisir', '😋 Soirée petit plaisir : un plat gourmand, mais toujours calé sur vos macros.', WHY.plaisir]);
+  return b.map(([cls, text, why]) => `<div class="day-banner ${cls}">${text}${whyBox(why)}</div>`).join('');
 }
+
+// Info du jour : change chaque jour, ou au clic sur ↻
+const FACT_LIST = Object.values(FACTS);
+let factIndex = Math.floor(Date.now() / 864e5) % FACT_LIST.length;
+const currentFact = () => FACT_LIST[factIndex];
 
 function renderWeek() {
   const plan = state.plan;
@@ -1122,6 +1148,11 @@ function renderWeek() {
     </div>
     ${cap && cost > cap ? `<p class="hint warn">Au-dessus de votre budget : régénère la semaine, choisis une tranche plus haute ou le régime végétarien, souvent moins cher.</p>` : ''}`;
   $('#week-summary').innerHTML = `
+    <div class="fact-card">
+      <span class="fact-icon" aria-hidden="true">💡</span>
+      <p><b>Le savais-tu ?</b> ${esc(currentFact())}</p>
+      <button type="button" class="chip-btn" id="btn-fact" title="Une autre info">↻</button>
+    </div>
     <h3>Moyenne par jour sur la semaine</h3>
     ${budgetHtml}
     ${activePeople().map(p => {
@@ -1508,6 +1539,12 @@ function bindEvents() {
   $('#btn-generate').addEventListener('click', generateWeek);
 
   // Délégation : boutons « changer » et « journée »
+  $('#week-summary').addEventListener('click', e => {
+    if (!e.target.closest('#btn-fact')) return;
+    factIndex = (factIndex + 1 + Math.floor(Math.random() * (FACT_LIST.length - 1))) % FACT_LIST.length;
+    $('.fact-card p').innerHTML = `<b>Le savais-tu ?</b> ${esc(currentFact())}`;
+  });
+
   $('#week').addEventListener('click', e => {
     const swap = e.target.closest('[data-swap]');
     if (swap) {

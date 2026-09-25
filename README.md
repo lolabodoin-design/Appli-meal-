@@ -35,8 +35,13 @@ Les données de chaque appareil (profils, menu, cases cochées) sont conservées
 4. **Menu de la semaine** : les **mêmes recettes pour tout le foyer**, mais des **portions différentes pour chacun**. Si une recette ne convient pas au régime de quelqu'un, il reçoit **sa propre variante** pour ce repas. Chaque recette affiche un tableau Lola / Barnabé / « À cuisiner » (le total à préparer), et des jauges comparent chaque journée aux objectifs de chaque personne.
    - 🔄 **changer** remplace un repas et rééquilibre les portions de la journée.
    - 🎲 **journée** régénère une journée entière.
-5. **Vrais produits (Open Food Facts)** : dans la liste de courses, le bouton « 🔎 Produits réels » affiche les produits les plus scannés en France pour chaque ingrédient, avec la marque, le Nutri-Score et les valeurs pour 100 g. On choisit son produit : le lien Leclerc Drive cherche alors ce produit précis. Une option permet de recalculer les portions avec les valeurs réelles des produits choisis.
-6. **Liste de courses** : les ingrédients sont additionnés sur la semaine, regroupés par rayon et convertis en conditionnements du commerce (barquettes, pots, pièces). Pour chaque produit, un bouton lance la recherche dans **ton magasin Leclerc Drive**. On peut aussi copier la liste, la télécharger en .txt ou l'imprimer.
+5. **Comprendre ce qu'on mange** :
+   - **« 💡 Le savais-tu ? »** dans chaque recette (une info nutrition sur un ingrédient principal) et une info du jour en haut du menu ;
+   - **« Pourquoi ? »** sur les journées particulières (lendemain de soirée, soirée, resto, plaisir, cantine) ;
+   - **« 💧 Pourquoi ce plat aujourd'hui ? »** dans les recettes d'un lendemain de soirée, ingrédient par ingrédient.
+   Les textes sont dans `data.js` (`FACTS`, `RECUP_TIPS`, `WHY`).
+6. **Vrais produits (Open Food Facts)** : dans la liste de courses, le bouton « 🔎 Produits réels » affiche les produits les plus scannés en France pour chaque ingrédient, avec la marque, le Nutri-Score et les valeurs pour 100 g. On choisit son produit : le lien Leclerc Drive cherche alors ce produit précis. Une option permet de recalculer les portions avec les valeurs réelles des produits choisis.
+7. **Liste de courses** : les ingrédients sont additionnés sur la semaine, regroupés par rayon et convertis en conditionnements du commerce (barquettes, pots, pièces). Pour chaque produit, un bouton lance la recherche dans **ton magasin Leclerc Drive**. On peut aussi copier la liste, la télécharger en .txt ou l'imprimer.
 
 ## Structure
 
