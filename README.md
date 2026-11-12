@@ -150,15 +150,8 @@ Aucune image à télécharger : léger, hors connexion, cohérent avec le logo e
 - Encart « De saison » : les fruits et légumes du mois dessinés (`produceIcon` dans plates.js),
   en bandeau qui défile, avec un raccourci vers les recettes de saison.
 
-## Anti-gaspi (`fridge.js`)
+## Quiz : « Un aliment à finir en priorité ? »
 
-Mode **désactivé par défaut** : l'appli fonctionne comme d'habitude. Onglet « Anti-gaspi » dans la barre du bas →
-page Mon frigo, qui propose aussi les **restes probables des dernières courses** (paquets entiers achetés − quantités
-utilisées, pour les articles cochés), à ajouter d'un toucher ; le frigo n'influence le menu qu'après « Activer : menu anti-gaspi » (bandeau + « Revenir au menu classique »).
-
-- On coche ce qu'il reste à la maison (1 toucher = il en reste, 2 = à finir vite) ; huile, épices, soja, miel
-  sont considérés comme toujours au placard.
-- **Finir mes restes** : le menu de la semaine favorise les recettes qui les utilisent (une fois chacun),
-  les « à finir vite » dès lundi–mercredi ; ils sont aussi cochés d'office dans la liste de courses.
-- **Uniquement mon frigo** : cartes qui défilent avec les recettes faisables sans courses, ou à 1–2 ingrédients près,
-  chacune avec son bouton « Cuisiner pas à pas ».
+Question facultative du quiz de la semaine (texte libre, ex. « épinards, yaourt grec »). Les recettes qui utilisent
+ces aliments passent devant, surtout du lundi au mercredi, jusqu'à ce que chacun soit utilisé une fois dans le menu.
+Sans réponse, le menu est calculé exactement comme d'habitude.

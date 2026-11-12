@@ -176,7 +176,7 @@ const DEFAULT_STATE = {
     defaultPerson('barnabe', 'Barnabé', { sexe: 'homme', age: 25, poids: 78, taille: 180, activite: '1.55', objectif: 'maintien' }),
   ],
   prefs: { temps: 'normal', budget: 'libre' },
-  quiz: { moods: [], events: {}, lunch: 'maison', dislikes: [], custom: [], plaisirDay: null },
+  quiz: { moods: [], events: {}, lunch: 'maison', dislikes: [], custom: [], finish: [], plaisirDay: null },
   driveUrl: '',
   // [{ meals: [{ slot, recipeId, variants?: { lola: 'dahl' }, scales: { lola: 1.2, barnabe: 1.5 } }
   //            (ou { slot, external: 'soiree', scales })] }] × 7
@@ -188,8 +188,6 @@ const DEFAULT_STATE = {
   stock: null,     // résultat du favori « Stock Drive » : { magasin, date, items: { ingrédient: {...} } }
   unavailable: [], // ingrédients en rupture au Drive, écartés à la prochaine génération
   ratings: {},     // avis du foyer sur les recettes : { idRecette: 'love' | 'dislike' }
-  fridge: {},      // « Mon frigo » : { ingrédient: 1 (il en reste) | 2 (à finir vite) }
-  antiGaspi: false, // le menu actuel a été calculé en mode anti-gaspi (bouton dédié uniquement)
 };
 
 const RECIPE_BY_ID = Object.fromEntries(RECIPES.map(r => [r.id, r]));
@@ -478,30 +476,33 @@ function seasonOf(recipe) {
 }
 
 // Plus une recette correspond aux envies, plus elle a de chances d'être tirée
-// ---------- Mon frigo (anti-gaspi) : les recettes qui utilisent ce qu'il reste passent devant.
-// « À finir vite » compte encore plus en début de semaine (lundi → mercredi).
-// Le frigo ne compte QUE si on active le mode anti-gaspi (bouton dédié) : state.antiGaspi
-let fridgeUsed = new Set(); // restes déjà utilisés par un repas du menu en cours de calcul
-let planningDay = 0;
-function fridgeHits(r) {
-  let n1 = 0, n2 = 0;
-  if (!state.antiGaspi) return { n1, n2 };
-  for (const id of r.ingIds) {
-    const v = state.fridge?.[id];
-    if (!v || fridgeUsed.has(id)) continue;
-    if (v === 2) n2++; else n1++;
-  }
-  return { n1, n2 };
+// ---------- Quiz « Un aliment à finir en priorité ? » (anti-gaspi léger)
+// Les recettes qui l'utilisent passent devant, surtout en début de semaine (lundi → mercredi),
+// jusqu'à ce qu'il soit utilisé une fois dans le menu.
+const finishCache = { key: null, ids: [] };
+function finishIds() {
+  const key = (state.quiz.finish || []).join('|');
+  if (finishCache.key !== key) finishCache.ids = [...new Set((state.quiz.finish || []).flatMap(ingredientsMatching))], finishCache.key = key;
+  return finishCache.ids;
 }
-const urgentBoost = () => (planningDay <= 2 ? 12 : 3);
-function markFridgeUsed(meals) {
-  for (const m of meals) for (const rid of mealRecipeIds(m)) for (const id of RECIPE_BY_ID[rid].ingIds) if (state.fridge?.[id]) fridgeUsed.add(id);
+let finishUsed = new Set();
+let planningDay = 0;
+function finishHits(r) {
+  const ids = finishIds();
+  if (!ids.length) return 0;
+  let n = 0;
+  for (const id of ids) if (r.ingIds.has(id) && !finishUsed.has(id)) n++;
+  return n;
+}
+function markFinishUsed(meals) {
+  const ids = finishIds();
+  for (const m of meals) for (const rid of mealRecipeIds(m)) for (const id of ids) if (RECIPE_BY_ID[rid].ingIds.has(id)) finishUsed.add(id);
 }
 
 function recipeWeight(r) {
   let w = 1;
-  const fh = fridgeHits(r);
-  if (fh.n1 || fh.n2) w *= 1 + 3 * fh.n1 + urgentBoost() * fh.n2;
+  const fin = finishHits(r);
+  if (fin) w *= 1 + (planningDay <= 2 ? 12 : 3) * fin;
   if (isLoved(r)) w *= 3; // les recettes aimées reviennent plus souvent
   const season = seasonOf(r);
   if (season === 'saison') w *= 1.5;
@@ -516,7 +517,7 @@ function recipeWeight(r) {
 // Bonus / malus ajoutés au score d'une journée (plus petit = meilleur)
 function preferenceScore(recipes) {
   return recipes.reduce((sum, r) => sum
-    - 0.06 * fridgeHits(r).n1 - (planningDay <= 2 ? 0.2 : 0.06) * fridgeHits(r).n2
+    - (planningDay <= 2 ? 0.2 : 0.06) * finishHits(r)
     - (state.quiz.moods.some(m => r.flags.has(m)) ? 0.03 : 0)
     - (isLoved(r) ? 0.04 : 0)
     - (seasonOf(r) === 'saison' ? 0.02 : 0) + (seasonOf(r) === 'hors' ? 0.03 : 0)
@@ -700,38 +701,15 @@ function canPlan(pools) {
   return pools.plat.length > 0;
 }
 
-// Restes probables des courses de la semaine qui se termine : paquet acheté − quantité utilisée.
-// Seulement pour ce qui a été coché (= acheté / mis au panier) : proposés ensuite dans « Anti-gaspi ».
-function boughtGrams(ing, g) {
-  if (ing.piece) return Math.max(1, Math.ceil(g / ing.piece - 0.15)) * ing.piece;
-  if (ing.pack) return Math.ceil(g / ing.pack) * ing.pack;
-  return g;
-}
-function rememberLeftovers() {
-  if (!state.plan || !Object.keys(state.checked || {}).length) return;
-  const items = shoppingList()
-    .filter(({ id, ing }) => state.checked[id] && !state.fridge?.[id] && !ing.placard && ing.rayon !== 'Placard')
-    .map(({ id, ing, g }) => ({ id, g: Math.round(boughtGrams(ing, g) - g) }))
-    .filter(({ id, g }) => {
-      const ing = INGREDIENTS[id];
-      return ing.piece ? g >= ing.piece * 0.8 : g >= Math.max(30, (ing.pack || 0) * 0.15);
-    });
-  if (items.length) state.leftovers = { date: new Date().toISOString(), items };
-}
-
-// generateWeek() : menu classique · generateWeek({ antiGaspi: true }) : utilise d'abord le frigo
-// (attention : en clic direct, le premier argument est l'événement → menu classique)
-function generateWeek(opts) {
+function generateWeek() {
   const pools = recipePools();
   if (!canPlan(pools)) return;
-  state.antiGaspi = opts?.antiGaspi === true && Object.keys(state.fridge || {}).length > 0;
-  rememberLeftovers();
   const usage = {};
   const families = { viande: 0, poisson: 0, vegetal: 0 };
-  fridgeUsed = new Set();
+  finishUsed = new Set();
   state.plan = DAYS.map((_, d) => {
     const meals = generateDay(d, pools, usage, families);
-    markFridgeUsed(meals);
+    markFinishUsed(meals);
     for (const m of meals) {
       for (const id of mealRecipeIds(m)) usage[id] = (usage[id] || 0) + 1;
       if (m.recipeId && RECIPE_BY_ID[m.recipeId].type === 'plat') families[proteinFamily(RECIPE_BY_ID[m.recipeId])]++;
@@ -739,8 +717,6 @@ function generateWeek(opts) {
     return { meals };
   });
   state.checked = {};
-  // Mode anti-gaspi : ce qu'on a déjà au frigo est coché d'office dans la liste de courses
-  if (state.antiGaspi) for (const { id } of shoppingList()) if (state.fridge?.[id]) state.checked[id] = true;
   showNotice('');
   saveState();
   render();
@@ -749,8 +725,8 @@ function generateWeek(opts) {
 function regenerateDay(d) {
   const pools = recipePools();
   if (!canPlan(pools)) return;
-  fridgeUsed = new Set();
-  state.plan.forEach((day, j) => { if (j !== d) markFridgeUsed(day.meals); });
+  finishUsed = new Set();
+  state.plan.forEach((day, j) => { if (j !== d) markFinishUsed(day.meals); });
   state.plan[d].meals = generateDay(d, pools, usageExcept(d), familyCounts(d));
   saveState();
   render();
@@ -1363,10 +1339,6 @@ function renderWeek() {
     ${cap && cost > cap ? `<p class="hint warn">Au-dessus de votre budget : régénère la semaine, choisis une tranche plus haute ou le régime végétarien, souvent moins cher.</p>` : ''}`;
   const statsOpen = $('#week-stats')?.open || false;
   $('#week-summary').innerHTML = `
-    ${state.antiGaspi ? `<div class="ag-banner">
-      <span><b>Menu anti-gaspi</b> · tes restes sont utilisés en priorité</span>
-      <button type="button" class="chip-btn" data-ag-off>Revenir au menu classique</button>
-    </div>` : ''}
     <div class="fact-card">
       <span class="fact-icon" aria-hidden="true"></span>
       <p><b>Le savais-tu ?</b> ${esc(currentFact())}</p>
@@ -1450,7 +1422,6 @@ function renderShopping() {
             <span>
               <span class="item-name">${esc(ing.name)}</span><br>
               <span class="item-qty">${esc(buyQuantity(ing, g))} · besoin : ${fmtWeight(g)}</span>
-              ${state.antiGaspi && state.fridge?.[id] ? '<span class="fridge-tag">Dans ton frigo · vérifie qu\'il y en a assez</span>' : ''}
               ${product ? `<span class="item-product">${nutriBadge(product.nutriscore)} ${esc([product.brand, product.name].filter(Boolean).join(' – '))}
                 <button type="button" class="link-btn" data-off-clear="${id}" title="Retirer ce produit">✕</button></span>` : ''}
               ${stockLine(id)}
@@ -1569,7 +1540,7 @@ function renderSummaries() {
   $('#sum-prefs').textContent = [temps?.[1].split(' :')[0], budget?.[1], driveStoreBase() ? 'Drive Leclerc' : 'pas de magasin'].filter(Boolean).join(' · ');
   const q = state.quiz;
   const n = q.moods.length + Object.keys(q.events).length + (q.lunch !== 'maison' ? 1 : 0)
-    + q.dislikes.length + q.custom.length + (q.plaisirDay !== null ? 1 : 0);
+    + q.dislikes.length + q.custom.length + (q.finish || []).length + (q.plaisirDay !== null ? 1 : 0);
   $('#quiz-count').textContent = n || '';
   $('#welcome-profils').classList.toggle('done', state.people.every(p => p.saved));
   currentSubscription().then(sub => { $('#sum-water').textContent = sub ? 'activés' : 'désactivés'; }).catch(() => {});
@@ -1577,7 +1548,7 @@ function renderSummaries() {
 
 // ---------- Quiz « Nos envies de la semaine »
 let quizStep = 0;
-const QUIZ_STEPS = 5; // + écran récapitulatif
+const QUIZ_STEPS = 6; // + écran récapitulatif
 
 const quizOption = (q, v, emoji, title, sub, selected, extra = '') => `
   <button type="button" class="quiz-opt ${selected ? 'selected' : ''}" data-q="${q}" data-v="${v}" ${extra} aria-pressed="${selected}">
@@ -1603,7 +1574,8 @@ function quizRecap() {
         ${row(1, 'Sorties', events.join(', ') || 'Aucune')}
         ${row(2, 'Le midi en semaine', `${lunch[1]} ${lunch[2]}`)}
         ${row(3, 'Pas envie de', dislikes.join(', ') || 'Rien à éviter')}
-        ${row(4, 'Petit plaisir', `${plaisir[1]} ${plaisir[2]}`)}
+        ${row(4, 'À finir en priorité', (q.finish || []).map(t => esc(t)).join(', ') || 'Rien')}
+        ${row(5, 'Petit plaisir', `${plaisir[1]} ${plaisir[2]}`)}
       </div>
     </div>
     <div class="quiz-nav">
@@ -1647,6 +1619,20 @@ function renderQuiz() {
         }).join('')}</div>
       </div>`;
   } else if (quizStep === 4) {
+    body = `<h3>Un aliment à finir en priorité ?</h3><p class="hint">Un reste dans le frigo, un produit qui arrive à date… Le menu l'utilisera dès le début de la semaine. Facultatif.</p>
+      <div class="custom-dislike">
+        <div class="custom-row">
+          <input type="text" id="finish-input" placeholder="ex. épinards, yaourt grec, courgette…" maxlength="30" autocomplete="off">
+          <button type="button" class="secondary" data-finish-add>Ajouter</button>
+        </div>
+        <div class="custom-chips">${(q.finish || []).map((term, i) => {
+          const found = ingredientsMatching(term).map(id => INGREDIENTS[id].name);
+          return `<span class="custom-chip finish ${found.length ? '' : 'none'}" title="${esc(found.join(', ') || 'Aucun ingrédient trouvé dans nos recettes')}">
+            ${esc(term)} <small>${found.length ? `→ ${esc(found.join(', '))}` : '(introuvable)'}</small>
+            <button type="button" data-finish-remove="${i}" aria-label="Retirer">✕</button></span>`;
+        }).join('')}</div>
+      </div>`;
+  } else if (quizStep === 5) {
     body = `<h3>Un petit plaisir ce week-end ?</h3><p class="hint">Burger maison, pizza, fajitas… version protéinée et toujours calée sur vos macros.</p>
       <div class="quiz-options">${PLAISIR_OPTIONS.map(([k, e, t, sub]) => quizOption('plaisir', k, e, t, sub, String(q.plaisirDay ?? '') === k)).join('')}</div>`;
   }
@@ -1656,6 +1642,18 @@ function renderQuiz() {
       <button type="button" class="ghost" data-q-nav="prev" ${quizStep === 0 ? 'disabled' : ''}>← Retour</button>
       <button type="button" class="secondary" data-q-nav="next">Suivant →</button>
     </div>`);
+}
+
+function addFinish() {
+  const input = $('#finish-input');
+  const term = input.value.trim();
+  state.quiz.finish ||= [];
+  if (!term || state.quiz.finish.some(t => normText(t) === normText(term))) { input.value = ''; return; }
+  state.quiz.finish.push(term);
+  saveState();
+  if (state.plan) showNotice('Vos envies ont changé : clique sur « Régénérer » pour les appliquer au menu.');
+  renderQuiz();
+  $('#finish-input').focus();
 }
 
 function addCustomDislike() {
@@ -1671,6 +1669,14 @@ function addCustomDislike() {
 
 function onQuizClick(e) {
   if (e.target.closest('[data-custom-add]')) { addCustomDislike(); return; }
+  if (e.target.closest('[data-finish-add]')) { addFinish(); return; }
+  const fr = e.target.closest('[data-finish-remove]');
+  if (fr) {
+    state.quiz.finish.splice(Number(fr.dataset.finishRemove), 1);
+    saveState();
+    renderQuiz();
+    return;
+  }
   const rm = e.target.closest('[data-custom-remove]');
   if (rm) {
     state.quiz.custom.splice(Number(rm.dataset.customRemove), 1);
@@ -1896,6 +1902,7 @@ function bindEvents() {
   $('#quiz').addEventListener('click', onQuizClick);
   $('#quiz').addEventListener('keydown', e => {
     if (e.key === 'Enter' && e.target.id === 'custom-dislike') { e.preventDefault(); addCustomDislike(); }
+    if (e.key === 'Enter' && e.target.id === 'finish-input') { e.preventDefault(); addFinish(); }
   });
 
   $('#drive-url').addEventListener('change', e => {
@@ -1909,11 +1916,6 @@ function bindEvents() {
 
   // Délégation : boutons « changer » et « journée »
   $('#week-summary').addEventListener('click', e => {
-    if (e.target.closest('[data-ag-off]')) {
-      generateWeek();
-      showNotice('Menu classique : le frigo n\'est plus pris en compte.');
-      return;
-    }
     if (e.target.closest('[data-season-go]')) {
       catalogFilter = 'saison';
       renderCatalog();
