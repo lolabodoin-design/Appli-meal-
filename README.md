@@ -155,3 +155,11 @@ Aucune image à télécharger : léger, hors connexion, cohérent avec le logo e
 Question facultative du quiz de la semaine (texte libre, ex. « épinards, yaourt grec »). Les recettes qui utilisent
 ces aliments passent devant, surtout du lundi au mercredi, jusqu'à ce que chacun soit utilisé une fois dans le menu.
 Sans réponse, le menu est calculé exactement comme d'habitude.
+
+## Page « Suivi » (`suivi.js`)
+
+- **Eau du jour** : verres dessinés de 500 ml jusqu'à l'objectif (35 ml/kg), « + 500 ml » ou toucher un verre ;
+  repart à zéro chaque jour (clé = date locale), 7 derniers jours en mini-barres, 60 jours d'historique.
+- **Poids** : une pesée par jour au plus, courbe des 12 dernières, écart depuis la première ;
+  le profil prend le nouveau poids et les objectifs caloriques sont recalculés.
+- Un suivi par personne ; par défaut, celle des rappels d'eau de l'appareil.

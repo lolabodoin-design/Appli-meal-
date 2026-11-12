@@ -738,3 +738,51 @@ html.cooking, html.cooking body { overflow: hidden; }
 .tint-rose { background: color-mix(in srgb, #d98c94 20%, var(--surface)); }
 @media (prefers-reduced-motion: reduce) { .season-item:hover .produce { transform: none; } }
 .custom-chip.finish { background: var(--sage-soft); border-color: var(--sage); }
+
+/* ---------- Page Suivi (suivi.js) */
+:root { --water: #8fb8cc; --water-soft: #dcebf1; }
+.suivi-who { display: flex; gap: 4px; background: var(--surface-2); border-radius: 999px; padding: 4px; margin: 0 auto 16px; max-width: 420px; }
+.suivi-who[hidden] { display: none; }
+.suivi-who .seg-btn { flex: 1; background: none; color: var(--muted); padding: 10px 12px; font-size: .86rem; }
+.suivi-who .seg-btn[aria-selected="true"] { background: var(--surface); color: var(--accent-strong); box-shadow: var(--shadow); }
+.suivi-card { margin-bottom: 16px; }
+.sv-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+.sv-kicker { font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.sv-big { font-family: var(--font-title); font-size: 1.9rem; color: var(--accent-strong); line-height: 1.15; }
+.sv-big b { font-weight: 400; }
+.sv-big span { font-family: var(--font-body); font-size: .95rem; color: var(--muted); }
+.sv-ring { --p: 0; width: 64px; height: 64px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: conic-gradient(var(--water) calc(var(--p) * 1%), var(--surface-2) 0); }
+.sv-ring span { width: 50px; height: 50px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; font-size: .8rem; font-weight: 600; color: var(--text); }
+.glasses { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; margin-bottom: 14px; }
+.glass { background: none; border: none; padding: 2px; border-radius: 12px; }
+.glass svg { width: 100%; height: auto; display: block; }
+.glass:active { transform: scale(.94); }
+.gl-water { fill: var(--water); transition: y .45s ease, height .45s ease; }
+.gl-wave { fill: none; stroke: var(--water-soft); stroke-width: 1.4; opacity: .9; }
+.gl-line { fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linejoin: round; opacity: .55; }
+.glass.full .gl-line { opacity: .85; }
+.gl-shine { stroke: #fff; stroke-width: 1.6; stroke-linecap: round; opacity: .55; }
+.sv-actions { display: flex; gap: 10px; justify-content: center; margin-bottom: 8px; }
+.sv-actions .primary { padding: 12px 30px; }
+.sv-actions .ghost { border: 1px solid var(--border); color: var(--text); }
+.sv-actions .ghost:disabled { opacity: .4; }
+.sv-msg { text-align: center; color: var(--muted); font-size: .88rem; margin: 0 0 16px; }
+.sv-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; border-top: 1px solid var(--border); padding-top: 12px; }
+.svw-day { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: .7rem; color: var(--muted); }
+.svw-bar { width: 14px; height: 46px; border-radius: 7px; background: var(--surface-2); display: flex; align-items: flex-end; overflow: hidden; }
+.svw-bar div { width: 100%; background: var(--water); border-radius: 7px; }
+.svw-day.today { color: var(--accent-strong); font-weight: 600; }
+.sv-diff { display: block; font-family: var(--font-body); font-size: .8rem; color: var(--muted); margin-top: 2px; }
+.sv-diff.down { color: var(--sage); }
+.sv-chart { width: 100%; height: auto; display: block; margin: 4px 0 12px; }
+.svc-area { fill: var(--sage-soft); }
+.svc-line { fill: none; stroke: var(--sage); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.svc-dot { fill: var(--surface); stroke: var(--sage); stroke-width: 2; }
+.svc-txt { fill: var(--muted); font-size: 10px; font-family: var(--font-body); }
+.sv-empty { text-align: center; padding: 18px 0; }
+.sv-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sv-form input { width: 96px; }
+.sv-unit { color: var(--muted); margin-right: 4px; }
+.sv-note { margin-top: 10px; }
+@media (prefers-reduced-motion: reduce) { .gl-water { transition: none; } }
