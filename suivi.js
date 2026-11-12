@@ -154,6 +154,129 @@
     renderAll(before !== p.targets.kcal ? `Noté ! Objectif de ${esc(p.name)} : ${p.targets.kcal} kcal par jour (avant : ${before}).` : 'Noté !');
   }
 
+  // ---------- Analyser mon assiette avec Claude (gratuit : passe par l'appli Claude de l'utilisatrice)
+  // 1. l'appli prépare une consigne (repas prévu + format de réponse), la copie et ouvre Claude
+  // 2. on y joint la photo ; Claude répond par un bloc JSON
+  // 3. on colle la réponse ici : affichage + comparaison au repas prévu, gardé dans l'historique du jour
+  const CLAUDE_URL = 'https://claude.ai/new';
+  const SLOT_ORDER = ['petitdej', 'dejeuner', 'collation', 'diner'];
+  let photoSlot = null;
+  let photoResult = null;
+  const photos = () => (state.photoLog ||= {});
+  const r0 = n => Math.round(Number(n) || 0);
+
+  function guessSlot() {
+    const h = new Date().getHours();
+    return h < 11 ? 'petitdej' : h < 15 ? 'dejeuner' : h < 18 ? 'collation' : 'diner';
+  }
+  // Le repas prévu aujourd'hui pour ce créneau (null si pas de menu ou repas dehors)
+  function plannedMeal(slot) {
+    const meal = state.plan?.[todayIndex]?.meals.find(m => m.slot === slot);
+    if (!meal) return null;
+    const detail = mealDetail(meal, person().id);
+    if (!detail) return null;
+    const name = meal.external ? EXTERNAL[meal.external].label : recipeOf(meal, person().id).name;
+    return { name, detail, external: !!meal.external };
+  }
+
+  function buildPrompt() {
+    const p = person(), plan = plannedMeal(photoSlot);
+    const planned = plan
+      ? `Repas prévu par mon appli pour ce ${SLOTS[photoSlot].label.toLowerCase()} : « ${plan.name} »`
+        + (plan.detail.items.length ? `, soit ${plan.detail.items.map(it => `${it.g} g de ${it.ing.name.toLowerCase()}`).join(', ')}` : '')
+        + `. Objectif : ${r0(plan.detail.totals.kcal)} kcal, ${r0(plan.detail.totals.p)} g de protéines, ${r0(plan.detail.totals.c)} g de glucides, ${r0(plan.detail.totals.f)} g de lipides.`
+      : 'Pas de repas prévu pour ce créneau.';
+    return `Je joins la photo de mon assiette (${SLOTS[photoSlot].label.toLowerCase()} de ${p.name}).
+${planned}
+
+Analyse la photo : identifie les aliments visibles, estime chaque quantité en grammes, puis les calories, protéines, glucides et lipides. Si un aliment est incertain, fais ta meilleure estimation.
+
+Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour) :
+\`\`\`json
+{"plat": "nom court du plat", "aliments": [{"nom": "...", "g": 0, "kcal": 0, "p": 0, "g_glucides": 0, "l": 0}], "total": {"kcal": 0, "p": 0, "g_glucides": 0, "l": 0}, "confiance": "faible | moyenne | bonne", "conseil": "une phrase courte et bienveillante, en comparant au repas prévu"}
+\`\`\``;
+  }
+
+  // Lit la réponse de Claude : bloc ```json ou premier objet { … }
+  function parseAnswer(text) {
+    const block = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    const raw = block ? block[1] : text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
+    let d;
+    try { d = JSON.parse(raw); } catch { return null; }
+    if (!d || typeof d !== 'object') return null;
+    const al = Array.isArray(d.aliments) ? d.aliments.map(a => ({
+      nom: String(a.nom || '?'), g: r0(a.g), kcal: r0(a.kcal), p: r0(a.p), c: r0(a.g_glucides ?? a.glucides), f: r0(a.l ?? a.lipides),
+    })) : [];
+    const t = d.total || {};
+    const total = {
+      kcal: r0(t.kcal) || al.reduce((x, a) => x + a.kcal, 0),
+      p: r0(t.p) || al.reduce((x, a) => x + a.p, 0),
+      c: r0(t.g_glucides ?? t.glucides) || al.reduce((x, a) => x + a.c, 0),
+      f: r0(t.l ?? t.lipides) || al.reduce((x, a) => x + a.f, 0),
+    };
+    if (!total.kcal && !al.length) return null;
+    return { plat: String(d.plat || 'Mon assiette'), aliments: al, total, confiance: String(d.confiance || ''), conseil: String(d.conseil || '') };
+  }
+
+  function resultHTML(res, plan) {
+    const t = res.total, T = plan?.detail.totals;
+    const diff = T ? t.kcal - r0(T.kcal) : null;
+    const bar = (label, v, target, cls) => {
+      const pct = target ? Math.min(150, Math.round((v / target) * 100)) : 0;
+      return `<div class="ph-bar"><span>${label}</span><div class="ph-track"><div class="${cls}" style="width:${Math.min(100, pct)}%"></div></div>
+        <b>${v}${label === 'Calories' ? '' : ' g'}</b>${target ? `<small>/ ${r0(target)}</small>` : ''}</div>`;
+    };
+    return `
+      <div class="ph-result">
+        <h3>${esc(res.plat)}</h3>
+        ${diff !== null ? `<p class="ph-diff ${Math.abs(diff) <= 0.12 * T.kcal ? 'ok' : 'off'}">${diff > 0 ? '+' : ''}${diff} kcal par rapport au repas prévu (${esc(plan.name)})</p>` : ''}
+        ${bar('Calories', t.kcal, T?.kcal, 'b-kcal')}${bar('Protéines', t.p, T?.p, 'b-p')}${bar('Glucides', t.c, T?.c, 'b-c')}${bar('Lipides', t.f, T?.f, 'b-f')}
+        ${res.aliments.length ? `<ul class="ph-list">${res.aliments.map(a => `<li><span>${esc(a.nom)}</span><small>${a.g} g · ${a.kcal} kcal</small></li>`).join('')}</ul>` : ''}
+        ${res.conseil ? `<p class="ph-tip">${esc(res.conseil)}</p>` : ''}
+        <p class="hint">Estimation sur photo${res.confiance ? ` · confiance ${esc(res.confiance)}` : ''} : à prendre comme un ordre de grandeur.</p>
+      </div>`;
+  }
+
+  function renderPhoto(msg = '') {
+    const p = person();
+    photoSlot ||= guessSlot();
+    const plan = plannedMeal(photoSlot);
+    const today = (photos()[todayKey()] || []).filter(x => x.who === p.id);
+    const dayKcal = today.reduce((a, x) => a + x.total.kcal, 0);
+    el('suivi-photo').innerHTML = `
+      <div class="sv-head"><div><span class="sv-kicker">Robot photo · avec Claude</span>
+        <div class="sv-big ph-title">Analyser mon assiette</div></div></div>
+      <div class="ph-slots">${SLOT_ORDER.map(k => `<button type="button" class="chip-btn ${k === photoSlot ? 'active' : ''}" data-ph-slot="${k}">${SLOTS[k].label}</button>`).join('')}</div>
+      <p class="hint">${plan ? `Prévu : <b>${esc(plan.name)}</b> · ${r0(plan.detail.totals.kcal)} kcal` : 'Pas de repas prévu pour ce créneau : Claude estimera sans comparer.'}</p>
+      <ol class="ph-steps">
+        <li><button type="button" class="primary small" data-ph-copy>Copier la consigne et ouvrir Claude</button>
+          <small>Dans Claude : colle la consigne, ajoute la photo de ton assiette, envoie.</small></li>
+        <li><span>Copie la réponse de Claude, puis :</span>
+          <div class="ph-paste"><button type="button" class="secondary" data-ph-paste>Coller la réponse</button></div>
+          <textarea id="ph-in" rows="3" placeholder="…ou colle-la ici à la main"></textarea>
+          <button type="button" class="chip-btn" data-ph-read>Lire la réponse</button></li>
+      </ol>
+      <p class="ph-msg" aria-live="polite">${msg}</p>
+      ${photoResult ? resultHTML(photoResult, plan) : ''}
+      ${today.length ? `<div class="ph-today"><b>Aujourd'hui</b> : ${today.length} repas analysé${today.length > 1 ? 's' : ''} · ${dayKcal} kcal
+        <ul>${today.map((x, i) => `<li>${esc(SLOTS[x.slot]?.label || '')} · ${esc(x.plat)} · ${x.total.kcal} kcal <button type="button" class="link-btn" data-ph-del="${i}" aria-label="Supprimer">✕</button></li>`).join('')}</ul></div>` : ''}`;
+  }
+
+  function readAnswer(text) {
+    const res = parseAnswer(text || '');
+    if (!res) { renderPhoto('Je n\'arrive pas à lire cette réponse. Vérifie que tu as copié tout le bloc de Claude (avec les accolades { }).'); return; }
+    photoResult = res;
+    const key = todayKey();
+    photos()[key] ||= [];
+    // Même réponse collée deux fois : on ne la compte qu'une fois
+    const dup = photos()[key].some(x => x.who === person().id && x.slot === photoSlot && x.plat === res.plat && x.total.kcal === res.total.kcal);
+    if (!dup) photos()[key].push({ who: person().id, slot: photoSlot, time: new Date().toTimeString().slice(0, 5), plat: res.plat, total: res.total });
+    const keys = Object.keys(photos()).sort();
+    while (keys.length > 60) delete photos()[keys.shift()];
+    saveState();
+    renderPhoto('Analyse enregistrée.');
+  }
+
   // ---------- Page
   function renderPeople() {
     const people = activePeople();
@@ -161,11 +284,33 @@
     el('suivi-who').innerHTML = people.map(p =>
       `<button type="button" class="seg-btn" data-who="${p.id}" aria-selected="${p.id === who}">${esc(p.name)}</button>`).join('');
   }
-  function renderAll(msg) { person(); renderPeople(); renderWater(); renderWeight(msg); }
+  function renderAll(msg) { person(); renderPeople(); renderWater(); renderPhoto(); renderWeight(msg); }
 
   page.addEventListener('click', e => {
     const w = e.target.closest('[data-who]');
-    if (w) { who = w.dataset.who; renderAll(); return; }
+    if (w) { who = w.dataset.who; photoResult = null; renderAll(); return; }
+    const sl = e.target.closest('[data-ph-slot]');
+    if (sl) { photoSlot = sl.dataset.phSlot; photoResult = null; renderPhoto(); return; }
+    if (e.target.closest('[data-ph-copy]')) {
+      // Copie puis ouverture dans le même geste (sinon Safari bloque l'un ou l'autre)
+      const text = buildPrompt();
+      const done = () => renderPhoto('Consigne copiée ! Dans Claude : colle-la, ajoute ta photo, envoie.');
+      navigator.clipboard?.writeText(text).then(done, () => { el('ph-in') && (el('ph-in').value = text); renderPhoto('Copie impossible : la consigne est dans la case ci-dessous, copie-la à la main.'); el('ph-in').value = text; });
+      window.open(CLAUDE_URL, '_blank', 'noopener');
+      return;
+    }
+    if (e.target.closest('[data-ph-paste]')) {
+      navigator.clipboard?.readText().then(readAnswer, () => renderPhoto('Ton téléphone a refusé de coller : colle la réponse dans la case ci-dessous.'));
+      return;
+    }
+    if (e.target.closest('[data-ph-read]')) { readAnswer(el('ph-in').value); return; }
+    const del = e.target.closest('[data-ph-del]');
+    if (del) {
+      const key = todayKey(), mine = (photos()[key] || []).filter(x => x.who === person().id);
+      const target = mine[Number(del.dataset.phDel)];
+      photos()[key] = photos()[key].filter(x => x !== target);
+      saveState(); renderPhoto(); return;
+    }
     const d = e.target.closest('[data-drink]');
     if (d) { setDrunk(drunk(person().id) + Number(d.dataset.drink) * GLASS); return; }
     const g = e.target.closest('[data-glass]');

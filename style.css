@@ -786,3 +786,28 @@ html.cooking, html.cooking body { overflow: hidden; }
 .sv-unit { color: var(--muted); margin-right: 4px; }
 .sv-note { margin-top: 10px; }
 @media (prefers-reduced-motion: reduce) { .gl-water { transition: none; } }
+
+/* Robot photo (suivi.js) */
+.ph-title { font-size: 1.45rem; }
+.ph-slots { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.ph-steps { margin: 12px 0 4px; padding-left: 20px; display: grid; gap: 14px; }
+.ph-steps li { padding-left: 4px; }
+.ph-steps small { display: block; color: var(--muted); font-size: .78rem; margin-top: 6px; }
+.ph-paste { margin: 8px 0; }
+.ph-steps textarea { width: 100%; font-size: .82rem; margin-bottom: 6px; }
+.ph-msg { color: var(--sage); font-size: .86rem; min-height: 1em; margin: 6px 0; }
+.ph-result { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 6px; }
+.ph-result h3 { font-family: var(--font-title); font-weight: 400; font-size: 1.25rem; color: var(--accent-strong); margin: 0 0 4px; }
+.ph-diff { font-size: .86rem; margin: 0 0 10px; }
+.ph-diff.ok { color: var(--sage); } .ph-diff.off { color: var(--bad); }
+.ph-bar { display: grid; grid-template-columns: 74px 1fr auto auto; align-items: center; gap: 8px; font-size: .8rem; margin-bottom: 6px; }
+.ph-bar small { color: var(--muted); }
+.ph-track { height: 7px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.ph-track div { height: 100%; border-radius: 4px; }
+.b-kcal { background: var(--accent); } .b-p { background: var(--p); } .b-c { background: var(--c); } .b-f { background: var(--f); }
+.ph-list { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 4px; font-size: .86rem; }
+.ph-list li { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed var(--border); padding-bottom: 4px; }
+.ph-list small { color: var(--muted); white-space: nowrap; }
+.ph-tip { background: var(--sage-soft); border-radius: var(--radius-sm); padding: 10px 12px; font-size: .88rem; margin: 10px 0; }
+.ph-today { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 10px; font-size: .86rem; }
+.ph-today ul { list-style: none; padding: 0; margin: 6px 0 0; color: var(--muted); }
