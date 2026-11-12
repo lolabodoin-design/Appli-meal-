@@ -1798,6 +1798,12 @@ function registerServiceWorker() {
   // Le service worker ne fonctionne qu'en https (ou sur localhost), pas en ouvrant le fichier directement
   if (!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
   navigator.serviceWorker.register('service-worker.js').then(reg => {
+    // Sur iPhone, rouvrir l'appli la sort souvent juste de l'arrière-plan, sans la recharger :
+    // on vérifie donc les mises à jour à chaque retour sur l'appli, et toutes les heures
+    const checkUpdate = () => reg.update().catch(() => { /* hors connexion */ });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
+    setInterval(checkUpdate, 60 * 60 * 1000);
+
     const offerUpdate = worker => {
       $('#update-banner').hidden = false;
       $('#btn-update').onclick = () => {
