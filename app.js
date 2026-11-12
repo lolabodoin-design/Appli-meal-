@@ -167,6 +167,7 @@ const DEFAULT_STATE = {
   useRealNutrition: false, // calculer avec les valeurs des produits choisis
   stock: null,     // résultat du favori « Stock Drive » : { magasin, date, items: { ingrédient: {...} } }
   unavailable: [], // ingrédients en rupture au Drive, écartés à la prochaine génération
+  ratings: {},     // avis du foyer sur les recettes : { idRecette: 'love' | 'dislike' }
 };
 
 const RECIPE_BY_ID = Object.fromEntries(RECIPES.map(r => [r.id, r]));
@@ -376,7 +377,11 @@ function dayTargets(person, d) {
 }
 
 // Filtres communs au foyer : « pas envie de » du quiz et ruptures au Drive
+const isLoved = r => state.ratings[r.id] === 'love';
+const isDisliked = r => state.ratings[r.id] === 'dislike';
+
 function householdAllows(recipe) {
+  if (isDisliked(recipe)) return false;                                     // « Pas pour nous »
   if (state.unavailable.some(id => recipe.ingIds.has(id))) return false; // en rupture au Drive
   if (state.quiz.dislikes.some(k => DISLIKES[k]?.test(recipe))) return false;
   return !customDislikeIds().some(id => recipe.ingIds.has(id));
@@ -443,6 +448,7 @@ function seasonOf(recipe) {
 // Plus une recette correspond aux envies, plus elle a de chances d'être tirée
 function recipeWeight(r) {
   let w = 1;
+  if (isLoved(r)) w *= 3; // les recettes aimées reviennent plus souvent
   const season = seasonOf(r);
   if (season === 'saison') w *= 1.5;
   if (season === 'hors') w *= 0.5;
@@ -457,6 +463,7 @@ function recipeWeight(r) {
 function preferenceScore(recipes) {
   return recipes.reduce((sum, r) => sum
     - (state.quiz.moods.some(m => r.flags.has(m)) ? 0.03 : 0)
+    - (isLoved(r) ? 0.04 : 0)
     - (seasonOf(r) === 'saison' ? 0.02 : 0) + (seasonOf(r) === 'hors' ? 0.03 : 0)
     + ((budgetCap() ?? 999) <= 120 && r.cher ? 0.05 : 0), 0);
 }
@@ -548,7 +555,8 @@ function optimizeHousehold(meals, d) {
 function varietyPenalty(recipes, usage) {
   return recipes.reduce((sum, r) => {
     const u = usage[r.id] || 0;
-    return sum + u * 0.2 + (u >= 2 ? 0.5 : 0); // on évite de resservir un plat dans la semaine
+    // On évite de resservir un plat dans la semaine (une recette aimée peut revenir une fois)
+    return sum + u * (isLoved(r) ? 0.08 : 0.2) + (u >= 2 ? 0.5 : 0);
   }, 0);
 }
 
@@ -686,6 +694,19 @@ function swapMeal(d, i) {
   // On tire au hasard parmi les 3 meilleures options pour varier à chaque clic
   const pick = randomItem(options.slice(0, 3));
   day.meals = pick.meals.map((m, j) => fromOptMeal(m, pick.scales[j]));
+  saveState();
+  render();
+}
+
+// Avis sur une recette ; « Pas pour nous » la remplace aussitôt dans le menu de la semaine
+function rateRecipe(id, rating) {
+  if (state.ratings[id] === rating) delete state.ratings[id]; // second clic : on annule
+  else state.ratings[id] = rating;
+  if (state.ratings[id] === 'dislike' && state.plan) {
+    state.plan.forEach((day, d) => day.meals.forEach((m, i) => {
+      if (mealRecipeIds(m).includes(id)) swapMeal(d, i);
+    }));
+  }
   saveState();
   render();
 }
@@ -1077,7 +1098,7 @@ function recipeDetails(recipe, eaters, ctx = {}) {
   }).join('');
   return `
     <details>
-      <summary>${esc(recipe.name)}${recipe.anti ? ' <span class="anti-dot" title="Anti-inflammatoire"></span>' : ''}${seasonOf(recipe) === 'saison' ? ' <span class="season-tag">de saison</span>' : ''}</summary>
+      <summary>${recipeTitle(recipe)}</summary>
       <table class="qty-table">
         <thead><tr><th></th>${eaters.map(({ p }) => `<th>${who(p)}</th>`).join('')}${showTotal ? '<th>À cuisiner</th>' : ''}</tr></thead>
         <tbody>${rows}</tbody>
@@ -1085,7 +1106,23 @@ function recipeDetails(recipe, eaters, ctx = {}) {
       <p class="steps">${esc(recipe.steps)}</p>
       ${ctx.lendemain && recupReasons(recipe) ? `<div class="tip recup-tip"><b>Pourquoi ce plat aujourd'hui ?</b><ul>${recupReasons(recipe)}</ul></div>` : ''}
       ${recipeFact(recipe) ? `<div class="tip"><b>Le savais-tu ?</b> ${esc(recipeFact(recipe))}</div>` : ''}
+      ${rateButtons(recipe)}
     </details>`;
+}
+
+// Nom d'une recette + petits repères (aimée, anti-inflammatoire, de saison)
+function recipeTitle(recipe) {
+  return `${isLoved(recipe) ? '<span class="love-mark" title="Vous aimez">♥</span> ' : ''}${esc(recipe.name)}`
+    + (recipe.anti ? ' <span class="anti-dot" title="Anti-inflammatoire"></span>' : '')
+    + (seasonOf(recipe) === 'saison' ? ' <span class="season-tag">de saison</span>' : '');
+}
+
+function rateButtons(recipe) {
+  const r = state.ratings[recipe.id];
+  return `<div class="rate">
+    <button type="button" class="rate-btn ${r === 'love' ? 'on' : ''}" data-rate="love" data-rid="${recipe.id}" aria-pressed="${r === 'love'}">${r === 'love' ? '♥ On aime' : '♡ J\'aime'}</button>
+    <button type="button" class="rate-btn ${r === 'dislike' ? 'on no' : ''}" data-rate="dislike" data-rid="${recipe.id}" aria-pressed="${r === 'dislike'}">${r === 'dislike' ? '✕ Écartée' : 'Pas pour nous'}</button>
+  </div>`;
 }
 
 function renderMeal(meal, d, i) {
@@ -1170,6 +1207,7 @@ function renderWeek() {
       <b>${euros(cost)}${cap ? ` / ${cap} €` : ''}</b>
     </div>
     ${cap && cost > cap ? `<p class="hint warn">Au-dessus de votre budget : régénère la semaine, choisis une tranche plus haute ou le régime végétarien, souvent moins cher.</p>` : ''}`;
+  const statsOpen = $('#week-stats')?.open || false;
   $('#week-summary').innerHTML = `
     <div class="fact-card">
       <span class="fact-icon" aria-hidden="true"></span>
@@ -1177,16 +1215,25 @@ function renderWeek() {
       <button type="button" class="chip-btn" id="btn-fact" title="Une autre info">↻</button>
     </div>
     <p class="season-line">En ${MONTHS[currentMonth - 1]}, c'est la saison de : ${esc(seasonalNow())}.</p>
-    <h3>Moyenne par jour sur la semaine</h3>
-    ${budgetHtml}
-    ${activePeople().map(p => {
-      const avg = { kcal: 0, p: 0, c: 0, f: 0 };
-      for (const day of plan) {
-        const t = dayTotals(day, p.id);
-        for (const m of MACROS) avg[m] += t[m] / plan.length;
-      }
-      return `<div class="summary-row">${who(p)}<div class="summary-bars">${macroBars(avg, p.targets)}</div></div>`;
-    }).join('')}`;
+    <details class="week-stats" id="week-stats">
+      <summary>
+        <span class="ws-title">Bilan de la semaine</span>
+        <span class="ws-line">${euros(cost)}${cap ? ` / ${cap} €` : ''} · ${activePeople().map(p => `${esc(p.name)} ${Math.round((avgOf(p).kcal / targetsOf(p).kcal) * 100)} %`).join(' · ')}</span>
+      </summary>
+      ${budgetHtml}
+      ${activePeople().map(p => `<div class="summary-row">${who(p)}<div class="summary-bars">${macroBars(avgOf(p), p.targets)}</div></div>`).join('')}
+    </details>`;
+  $('#week-stats').open = statsOpen;
+}
+
+// Moyenne par jour d'une personne sur la semaine
+function avgOf(p) {
+  const avg = { kcal: 0, p: 0, c: 0, f: 0 };
+  for (const day of state.plan) {
+    const t = dayTotals(day, p.id);
+    for (const m of MACROS) avg[m] += t[m] / state.plan.length;
+  }
+  return avg;
 }
 
 const nutriBadge = grade => grade
@@ -1226,7 +1273,7 @@ function renderShopping() {
   const groups = groupedList();
   const total = groups.reduce((a, g) => a + g.items.length, 0);
   const remaining = groups.reduce((a, g) => a + g.items.filter(x => !state.checked[x.id]).length, 0);
-  $('#count').textContent = `${remaining}/${total}`;
+  $('#count').textContent = remaining || '';
   $('#use-real').checked = state.useRealNutrition;
 
   renderStockSummary();
@@ -1262,13 +1309,105 @@ function renderShopping() {
     </div>`).join('');
 }
 
+// ---------- Onglet « Recettes » : catalogue, recherche, favoris
+const CATALOG_FILTERS = [
+  ['all', 'Toutes'], ['love', '♥ Favoris'], ['petitdej', 'Petits-déjeuners'], ['plat', 'Plats'],
+  ['collation', 'Collations'], ['saison', 'De saison'], ['dislike', 'Écartées'],
+];
+let catalogFilter = 'all';
+let catalogQuery = '';
+
+function catalogList() {
+  const q = normText(catalogQuery);
+  return RECIPES.filter(r => {
+    if (catalogFilter === 'love' && !isLoved(r)) return false;
+    if (catalogFilter === 'dislike' && !isDisliked(r)) return false;
+    if (['petitdej', 'plat', 'collation'].includes(catalogFilter) && r.type !== catalogFilter) return false;
+    if (catalogFilter === 'saison' && seasonOf(r) !== 'saison') return false;
+    if (catalogFilter !== 'dislike' && isDisliked(r) && catalogFilter !== 'all') return false;
+    if (q && !normText(r.name + ' ' + r.ingredients.map(([id]) => INGREDIENTS[id].name).join(' ')).includes(q)) return false;
+    return true;
+  });
+}
+
+function renderCatalog() {
+  const loved = RECIPES.filter(isLoved).length;
+  $('#count-recettes').textContent = loved ? `♥ ${loved}` : '';
+  $('#catalog-filters').innerHTML = CATALOG_FILTERS.map(([k, l]) =>
+    `<button type="button" class="filter ${catalogFilter === k ? 'on' : ''}" data-filter="${k}">${l}</button>`).join('');
+  const list = catalogList();
+  const people = activePeople();
+  $('#catalog').innerHTML = `<p class="hint">${list.length} recette${list.length > 1 ? 's' : ''}</p>` + (list.length ? list.map(r => {
+    const b = recipeBase(r);
+    const forWho = people.filter(p => personAllows(r, p)).map(p => p.name);
+    const typeLabel = { petitdej: 'Petit-déjeuner', plat: 'Plat', collation: 'Collation' }[r.type];
+    return `
+      <article class="recipe-card ${isDisliked(r) ? 'disliked' : ''}">
+        <div class="recipe-meta">${typeLabel} · ${r.time} min · portion de base ${Math.round(b.kcal)} kcal · <span class="mp">P ${Math.round(b.p)} g</span></div>
+        <details>
+          <summary>${recipeTitle(r)}</summary>
+          <ul class="ing-list">${r.ingredients.map(([id, g]) => `<li>${fmtQty(INGREDIENTS[id], g)} · ${esc(INGREDIENTS[id].name)}</li>`).join('')}</ul>
+          <p class="steps">${esc(r.steps)}</p>
+          ${recipeFact(r) ? `<div class="tip"><b>Le savais-tu ?</b> ${esc(recipeFact(r))}</div>` : ''}
+          ${forWho.length < people.length ? `<p class="hint">Convient à : ${esc(forWho.join(', ') || 'personne, avec vos régimes actuels')}</p>` : ''}
+        </details>
+        ${rateButtons(r)}
+      </article>`;
+  }).join('') : `<p class="hint">${catalogFilter === 'love' ? 'Aucun favori pour l\'instant : touche « ♡ J\'aime » sur une recette.' : 'Aucune recette ne correspond.'}</p>`);
+}
+
 function render() {
+  renderCatalog();
+  renderSummaries();
   const has = Boolean(state.plan);
-  $('#results').hidden = !has;
+  $('#welcome').hidden = has;
+  $('#week-summary').hidden = !has;
+  $('#courses-empty').hidden = has;
+  $('#courses-content').hidden = !has;
   $('#btn-generate').textContent = has ? 'Régénérer la semaine' : 'Générer notre menu';
-  if (!has) return;
+  if (!has) {
+    $('#week').innerHTML = '';
+    $('#count').textContent = '';
+    return;
+  }
   renderWeek();
   renderShopping();
+}
+
+// ============================================================
+//  Navigation : 4 pages + quiz en fenêtre
+// ============================================================
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => { p.hidden = p.id !== `page-${name}`; });
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.page === name));
+  window.scrollTo(0, 0);
+  try { sessionStorage.setItem('page', name); } catch { /* ignore */ }
+}
+
+function openQuiz() {
+  $('#quiz-sheet').hidden = false;
+  document.body.classList.add('sheet-open');
+  renderQuiz();
+}
+
+function closeQuiz() {
+  $('#quiz-sheet').hidden = true;
+  document.body.classList.remove('sheet-open');
+  renderSummaries();
+}
+
+// Une ligne de résumé pour chaque réglage replié, et le nombre d'envies sur le bouton du quiz
+function renderSummaries() {
+  $('#sum-foyer').textContent = state.people.map(p => `${p.name} · ${REGIMES[p.regime].label.toLowerCase()}`).join('  —  ');
+  const temps = TIME_OPTIONS.find(([k]) => k === state.prefs.temps);
+  const budget = BUDGET_OPTIONS.find(([k]) => k === state.prefs.budget);
+  $('#sum-prefs').textContent = [temps?.[1].split(' :')[0], budget?.[1], driveStoreBase() ? 'Drive Leclerc' : 'pas de magasin'].filter(Boolean).join(' · ');
+  const q = state.quiz;
+  const n = q.moods.length + Object.keys(q.events).length + (q.lunch !== 'maison' ? 1 : 0)
+    + q.dislikes.length + q.custom.length + (q.plaisirDay !== null ? 1 : 0);
+  $('#quiz-count').textContent = n || '';
+  $('#welcome-profils').classList.toggle('done', state.people.every(p => p.saved));
+  currentSubscription().then(sub => { $('#sum-water').textContent = sub ? 'activés' : 'désactivés'; }).catch(() => {});
 }
 
 // ---------- Quiz « Nos envies de la semaine »
@@ -1395,7 +1534,7 @@ function onQuizClick(e) {
     else if (a.startsWith('goto-')) quizStep = Number(a.slice(5));
     else if (a === 'generate') {
       generateWeek();
-      if (state.plan) $('#results').scrollIntoView({ behavior: 'smooth' });
+      if (state.plan) { closeQuiz(); showPage('semaine'); }
       return;
     }
     renderQuiz();
@@ -1498,6 +1637,7 @@ function fillForms() {
 // ============================================================
 function prefsChanged() {
   saveState();
+  renderSummaries();
   if (state.plan) showNotice('Préférences modifiées : clique sur « Régénérer » pour les appliquer au menu.');
 }
 
@@ -1543,6 +1683,7 @@ function bindEvents() {
     p.saved = btn.hasAttribute('data-save');
     saveState();
     renderPeopleForms();
+    renderSummaries();
   });
 
   for (const k of ['temps', 'budget']) {
@@ -1571,6 +1712,23 @@ function bindEvents() {
     if (!e.target.closest('#btn-fact')) return;
     factIndex = (factIndex + 1 + Math.floor(Math.random() * (FACT_LIST.length - 1))) % FACT_LIST.length;
     $('.fact-card p').innerHTML = `<b>Le savais-tu ?</b> ${esc(currentFact())}`;
+  });
+
+  // Avis « J'aime / Pas pour nous » (dans le menu et dans le catalogue)
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('[data-rate]');
+    if (btn) { e.preventDefault(); rateRecipe(btn.dataset.rid, btn.dataset.rate); }
+  });
+
+  $('#catalog-filters').addEventListener('click', e => {
+    const f = e.target.closest('[data-filter]');
+    if (!f) return;
+    catalogFilter = f.dataset.filter;
+    renderCatalog();
+  });
+  $('#catalog-search').addEventListener('input', e => {
+    catalogQuery = e.target.value;
+    renderCatalog();
   });
 
   $('#week').addEventListener('click', e => {
@@ -1608,11 +1766,17 @@ function bindEvents() {
     renderShopping();
   });
 
-  document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
-    $('#tab-menu').hidden = tab.dataset.tab !== 'menu';
-    $('#tab-courses').hidden = tab.dataset.tab !== 'courses';
-  }));
+  // Navigation entre les pages
+  document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', () => showPage(b.dataset.page)));
+  document.addEventListener('click', e => {
+    const go = e.target.closest('[data-go]');
+    if (go) { showPage(go.dataset.go); if (go.dataset.go === 'reglages') $('#profil').open = true; }
+    if (e.target.closest('[data-open-quiz]')) openQuiz();
+  });
+  $('#btn-quiz').addEventListener('click', openQuiz);
+  $('#btn-quiz-close').addEventListener('click', closeQuiz);
+  $('#quiz-sheet').addEventListener('click', e => { if (e.target.id === 'quiz-sheet') closeQuiz(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#quiz-sheet').hidden) closeQuiz(); });
 
   $('#btn-copy').addEventListener('click', async e => {
     try {
@@ -1721,6 +1885,7 @@ async function currentSubscription() {
 }
 
 async function renderWater() {
+  if (typeof renderSummaries === 'function' && $('#sum-water')) renderSummaries();
   const el = $('#water-body');
   state.water ||= { prenom: state.people[0].name, rythme: '4x' };
   const settings = `
@@ -1858,5 +2023,7 @@ fillForms();
 bindEvents();
 bindWaterEvents();
 render();
+$('#profil').open = !state.people.every(p => p.saved);
+try { const page = sessionStorage.getItem('page'); if (page && $(`#page-${page}`)) showPage(page); } catch { /* ignore */ }
 registerServiceWorker();
 renderWater();

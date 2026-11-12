@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Menu Protéiné</title>
+  <title>Le menu de la semaine</title>
   <meta name="description" content="Le menu healthy du foyer, calé sur vos macros, avec la liste de courses Leclerc Drive.">
   <!-- Appli installable (PWA) -->
   <link rel="manifest" href="manifest.json">
@@ -31,68 +31,33 @@
   </header>
 
   <main class="wrap">
-    <div class="setup">
-      <!-- 1. Le foyer -->
-      <section class="card" id="profil">
-        <h2><span class="step">1</span> Le foyer</h2>
-        <p class="hint top">Vous mangez les mêmes recettes, chacun avec ses portions. Si une recette ne convient pas au régime de l'un de vous, il a sa propre variante.</p>
-        <div id="people" class="people"></div>
-        <p class="hint" id="people-hint">Remplissez une seule fois puis cliquez sur « Enregistrer ». Les objectifs se recalculent quand vous changez les mensurations ou l'objectif (formule de Mifflin-St Jeor), puis restent ajustables à la main. Protéines par kg de poids de corps : 1,6 g en maintien, 2 g en perte de gras ou en prise de muscle, 2,2 g en recomposition corporelle. Lipides : 27 % des calories ; glucides : le reste.</p>
-      </section>
-
-      <!-- 2. Préférences -->
-      <section class="card" id="prefs">
-        <h2><span class="step">2</span> Nos préférences</h2>
-        <div class="prefs-grid">
-          <div>
-            <div class="pref-selects">
-              <label class="field-label">Temps en cuisine
-                <select id="temps"></select>
-              </label>
-              <label class="field-label">Budget courses du foyer
-                <select id="budget"></select>
-              </label>
-            </div>
-          </div>
-          <div>
-            <label class="field-label">Notre magasin Leclerc Drive <span class="optional">(facultatif)</span>
-              <input type="url" id="drive-url" placeholder="https://fd…-courses.leclercdrive.fr/magasin-…">
-            </label>
-            <p class="hint"><span id="drive-status"></span> Va sur <a href="https://www.leclercdrive.fr/" target="_blank" rel="noopener">leclercdrive.fr</a>, choisis ton magasin, puis colle ici l'adresse de n'importe quelle page du magasin. Les liens de la liste de courses lanceront alors la recherche de chaque produit dans ton Drive.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Rappels d'eau -->
-      <section class="card water-card" id="water">
-        <h2><span class="step water-step">💧</span> Rappels pour boire de l'eau</h2>
-        <div id="water-body"></div>
-      </section>
-
-      <!-- 3. Quiz -->
-      <section class="card quiz-card" id="quiz-section">
-        <h2><span class="step">3</span> Nos envies de la semaine <span class="quiz-badge">Quiz</span></h2>
-        <div id="quiz"></div>
-      </section>
-    </div>
-
-    <div class="actions">
-      <button type="button" id="btn-generate" class="primary">Générer notre menu</button>
+    <!-- ============ Page « Semaine » (accueil) ============ -->
+    <section class="page" id="page-semaine">
+      <div class="page-actions">
+        <button type="button" id="btn-quiz" class="secondary">Nos envies <span id="quiz-count" class="badge"></span></button>
+        <button type="button" id="btn-generate" class="primary">Générer notre menu</button>
+      </div>
       <p id="notice" class="notice" hidden></p>
-    </div>
 
-    <div id="results" hidden>
-      <nav class="tabs" role="tablist">
-        <button type="button" role="tab" class="tab active" data-tab="menu">Menu</button>
-        <button type="button" role="tab" class="tab" data-tab="courses">Courses <span id="count" class="badge"></span></button>
-      </nav>
+      <div id="welcome" class="card welcome" hidden>
+        <h2>Bienvenue</h2>
+        <ol class="welcome-steps">
+          <li id="welcome-profils"><span>Remplissez vos profils une seule fois</span>
+            <button type="button" class="chip-btn" data-go="reglages">Ouvrir les réglages</button></li>
+          <li><span>Dites-nous vos envies de la semaine <small>(facultatif)</small></span>
+            <button type="button" class="chip-btn" data-open-quiz>Nos envies</button></li>
+          <li><span>Générez votre menu</span></li>
+        </ol>
+      </div>
 
-      <section id="tab-menu" class="tab-panel">
-        <div id="week-summary" class="card summary"></div>
-        <div id="week" class="week-grid"></div>
-      </section>
+      <div id="week-summary" class="card summary" hidden></div>
+      <div id="week" class="week-grid"></div>
+    </section>
 
-      <section id="tab-courses" class="tab-panel" hidden>
+    <!-- ============ Page « Courses » ============ -->
+    <section class="page" id="page-courses" hidden>
+      <p class="empty card" id="courses-empty">Générez d'abord votre menu de la semaine : la liste de courses se remplira toute seule.</p>
+      <div id="courses-content">
         <div class="card">
           <div class="toolbar">
             <button type="button" id="btn-copy" class="secondary">Copier</button>
@@ -129,13 +94,91 @@
           </div>
           <div id="shopping"></div>
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
+
+    <!-- ============ Page « Recettes » ============ -->
+    <section class="page" id="page-recettes" hidden>
+      <div class="card">
+        <h2>Nos recettes</h2>
+        <p class="hint top">Touchez « ♡ J'aime » pour voir une recette revenir plus souvent, ou « Pas pour nous » pour ne plus la voir.</p>
+        <input type="text" id="catalog-search" class="search" placeholder="Rechercher une recette ou un ingrédient…" autocomplete="off">
+        <div id="catalog-filters" class="filters"></div>
+        <div id="catalog" class="catalog"></div>
+      </div>
+    </section>
+
+    <!-- ============ Page « Réglages » ============ -->
+    <section class="page" id="page-reglages" hidden>
+      <div class="setup">
+        <details class="card fold" id="profil">
+          <summary><h2>Le foyer</h2><span class="fold-sum" id="sum-foyer"></span></summary>
+          <p class="hint top">Vous mangez les mêmes recettes, chacun avec ses portions. Si une recette ne convient pas au régime de l'un de vous, il a sa propre variante.</p>
+          <div id="people" class="people"></div>
+          <p class="hint" id="people-hint">Remplissez une seule fois puis cliquez sur « Enregistrer ». Les objectifs se recalculent quand vous changez les mensurations ou l'objectif (formule de Mifflin-St Jeor), puis restent ajustables à la main. Protéines par kg de poids de corps : 1,6 g en maintien, 2 g en perte de gras ou en prise de muscle, 2,2 g en recomposition corporelle. Lipides : 27 % des calories ; glucides : le reste.</p>
+        </details>
+
+        <details class="card fold" id="prefs">
+          <summary><h2>Nos préférences</h2><span class="fold-sum" id="sum-prefs"></span></summary>
+          <div class="prefs-grid">
+            <div class="pref-selects">
+              <label class="field-label">Temps en cuisine
+                <select id="temps"></select>
+              </label>
+              <label class="field-label">Budget courses du foyer
+                <select id="budget"></select>
+              </label>
+            </div>
+            <div>
+              <label class="field-label">Notre magasin Leclerc Drive <span class="optional">(facultatif)</span>
+                <input type="url" id="drive-url" placeholder="https://fd…-courses.leclercdrive.fr/magasin-…">
+              </label>
+              <p class="hint"><span id="drive-status"></span> Va sur <a href="https://www.leclercdrive.fr/" target="_blank" rel="noopener">leclercdrive.fr</a>, choisis ton magasin, puis colle ici l'adresse de n'importe quelle page du magasin. Les liens de la liste de courses lanceront alors la recherche de chaque produit dans ton Drive.</p>
+            </div>
+          </div>
+        </details>
+
+        <details class="card fold" id="water">
+          <summary><h2>Rappels d'eau</h2><span class="fold-sum" id="sum-water"></span></summary>
+          <div id="water-body"></div>
+        </details>
+      </div>
+      <footer class="footer">
+        Valeurs nutritionnelles indicatives (table Ciqual, étiquettes, <a href="https://fr.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a>). Ceci n'est pas un avis médical.
+      </footer>
+    </section>
   </main>
 
-  <footer class="wrap footer">
-    Valeurs nutritionnelles indicatives (table Ciqual, étiquettes, <a href="https://fr.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a>). Ceci n'est pas un avis médical. 
-  </footer>
+  <!-- ============ Barre de navigation ============ -->
+  <nav class="bottom-nav" aria-label="Navigation">
+    <button type="button" class="nav-item active" data-page="semaine">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+      <span>Semaine</span>
+    </button>
+    <button type="button" class="nav-item" data-page="courses">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 10V6.5a3 3 0 0 1 6 0V10"/></svg>
+      <span>Courses</span><span id="count" class="nav-badge"></span>
+    </button>
+    <button type="button" class="nav-item" data-page="recettes">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10 5 7 4.5 4 5v14c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5zM12 6.5v14"/></svg>
+      <span>Recettes</span><span id="count-recettes" class="nav-badge"></span>
+    </button>
+    <button type="button" class="nav-item" data-page="reglages">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+      <span>Réglages</span>
+    </button>
+  </nav>
+
+  <!-- ============ Quiz « Nos envies », en fenêtre ============ -->
+  <div id="quiz-sheet" class="sheet" hidden>
+    <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="quiz-title">
+      <div class="sheet-head">
+        <h2 id="quiz-title">Nos envies de la semaine</h2>
+        <button type="button" class="sheet-close" id="btn-quiz-close" aria-label="Fermer">✕</button>
+      </div>
+      <div id="quiz"></div>
+    </div>
+  </div>
 
   <div id="update-banner" class="update-banner" hidden>
     <span>Nouvelle version de l'appli disponible</span>

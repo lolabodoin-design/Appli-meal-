@@ -23,6 +23,12 @@ Les données de chaque appareil (profils, menu, cases cochées) sont conservées
 
 ## Fonctionnalités
 
+L'appli est organisée en **4 pages**, accessibles par une barre de navigation en bas de l'écran :
+- **Semaine** (accueil) : le menu, le bouton « Nos envies » (quiz en fenêtre) et « Régénérer » ;
+- **Courses** : la liste de courses, Open Food Facts et le stock du Drive ;
+- **Recettes** : le catalogue complet, avec recherche, filtres et favoris ;
+- **Réglages** : le foyer, les préférences et les rappels d'eau, repliés sur une ligne de résumé une fois configurés.
+
 1. **Le foyer (2 profils)** : Lola et Barnabé ont chacun leurs mensurations, leur objectif et leurs cibles de calories et de macros (recalcul automatique par Mifflin-St Jeor dès qu'on change une mensuration ou l'objectif, puis ajustable à la main). Objectifs : perte de gras (−20 % kcal, 2 g de protéines/kg), **recomposition corporelle** (−10 % kcal, 2,2 g/kg), maintien (1,6 g/kg), prise de muscle (+10 % kcal, 2 g/kg). Chaque personne a aussi son **régime** et choisit si elle prend une collation. Les mensurations se saisissent une seule fois : après « Enregistrer », le profil s'affiche en résumé (bouton « Modifier » pour y revenir).
 2. **Préférences communes** : temps en cuisine les soirs de semaine (express 15 min, normal 30 min, sans limite) et **budget courses en tranches d'euros** (moins de 90 €, 90-120 €, 120-150 €, 150-180 € par semaine, ou sans limite). Chaque ingrédient a un prix indicatif en €/kg (`PRICES` dans `data.js`), remplacé par le prix réel du Drive après la vérification du stock. L'algorithme pénalise les journées qui dépassent leur part du budget, et l'appli affiche le coût estimé de la semaine ainsi que l'estimation en caisse (paquets entiers).
    - Le régime **anti-inflammatoire** ne garde que les recettes marquées 🌿 : poissons gras riches en oméga-3 (saumon, sardines), noix, fruits rouges, légumes verts, légumineuses, curcuma et huile d'olive. Il exclut la viande rouge, la charcuterie et les sucres ajoutés.
@@ -35,14 +41,15 @@ Les données de chaque appareil (profils, menu, cases cochées) sont conservées
 4. **Menu de la semaine** : les **mêmes recettes pour tout le foyer**, mais des **portions différentes pour chacun**. Si une recette ne convient pas au régime de quelqu'un, il reçoit **sa propre variante** pour ce repas. Chaque recette affiche un tableau Lola / Barnabé / « À cuisiner » (le total à préparer), et des jauges comparent chaque journée aux objectifs de chaque personne.
    - 🔄 **changer** remplace un repas et rééquilibre les portions de la journée.
    - 🎲 **journée** régénère une journée entière.
-5. **Fruits et légumes de saison** : chaque produit frais a ses mois de saison (`saison` dans `data.js`). Les recettes de saison sortent plus souvent (badge « de saison »), celles hors saison moins, et le menu rappelle ce qui est de saison ce mois-ci.
-6. **Comprendre ce qu'on mange** :
+5. **J'aime / Pas pour nous** : sur chaque recette. Une recette aimée revient environ 3 fois plus souvent (cœur ♥ à côté de son nom) ; une recette écartée ne revient plus et est remplacée tout de suite dans le menu. Les avis sont communs au foyer.
+6. **Fruits et légumes de saison** : chaque produit frais a ses mois de saison (`saison` dans `data.js`). Les recettes de saison sortent plus souvent (badge « de saison »), celles hors saison moins, et le menu rappelle ce qui est de saison ce mois-ci.
+7. **Comprendre ce qu'on mange** :
    - **« 💡 Le savais-tu ? »** dans chaque recette (une info nutrition sur un ingrédient principal) et une info du jour en haut du menu ;
    - **« Pourquoi ? »** sur les journées particulières (lendemain de soirée, soirée, resto, plaisir, cantine) ;
    - **« 💧 Pourquoi ce plat aujourd'hui ? »** dans les recettes d'un lendemain de soirée, ingrédient par ingrédient.
    Les textes sont dans `data.js` (`FACTS`, `RECUP_TIPS`, `WHY`).
-7. **Vrais produits (Open Food Facts)** : dans la liste de courses, le bouton « 🔎 Produits réels » affiche les produits les plus scannés en France pour chaque ingrédient, avec la marque, le Nutri-Score et les valeurs pour 100 g. On choisit son produit : le lien Leclerc Drive cherche alors ce produit précis. Une option permet de recalculer les portions avec les valeurs réelles des produits choisis.
-8. **Liste de courses** : les ingrédients sont additionnés sur la semaine, regroupés par rayon et convertis en conditionnements du commerce (barquettes, pots, pièces). Pour chaque produit, un bouton lance la recherche dans **ton magasin Leclerc Drive**. On peut aussi copier la liste, la télécharger en .txt ou l'imprimer.
+8. **Vrais produits (Open Food Facts)** : dans la liste de courses, le bouton « 🔎 Produits réels » affiche les produits les plus scannés en France pour chaque ingrédient, avec la marque, le Nutri-Score et les valeurs pour 100 g. On choisit son produit : le lien Leclerc Drive cherche alors ce produit précis. Une option permet de recalculer les portions avec les valeurs réelles des produits choisis.
+9. **Liste de courses** : les ingrédients sont additionnés sur la semaine, regroupés par rayon et convertis en conditionnements du commerce (barquettes, pots, pièces). Pour chaque produit, un bouton lance la recherche dans **ton magasin Leclerc Drive**. On peut aussi copier la liste, la télécharger en .txt ou l'imprimer.
 
 ## Identité visuelle
 

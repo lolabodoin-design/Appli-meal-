@@ -164,16 +164,65 @@ button {
   margin: 14px 0 0; font-size: .86rem;
 }
 
-/* ---------- Onglets */
-.tabs {
-  display: flex; gap: 4px; padding: 4px; margin: 0 auto 20px; width: fit-content; max-width: 100%;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
-  position: sticky; top: 10px; z-index: 10; box-shadow: var(--shadow);
+
+/* ---------- Pages et navigation */
+body { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+.appbar { padding-top: calc(22px + env(safe-area-inset-top)); padding-bottom: 18px; margin-bottom: 22px; }
+.page-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 18px; }
+.page-actions .primary { padding: 12px 26px; }
+.page-actions .secondary { padding: 12px 22px; }
+.notice { display: block; width: fit-content; margin: -6px auto 16px; }
+.badge { background: var(--accent-soft); color: var(--accent); border-radius: 99px; padding: 0 7px; font-size: .72rem; margin-left: 2px; }
+.badge:empty { display: none; }
+.bottom-nav {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 50;
+  display: flex; gap: 2px; padding: 5px; width: min(520px, calc(100vw - 20px));
+  background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border); border-radius: 22px; box-shadow: var(--shadow-lift);
 }
-.tab { background: none; padding: 9px 26px; color: var(--muted); font-size: .9rem; white-space: nowrap; }
-.tab.active { background: var(--accent); color: var(--surface); }
-.tab.active .badge { background: rgba(255, 255, 255, .2); color: inherit; }
-.badge { background: var(--accent-soft); color: var(--accent); border-radius: 99px; padding: 1px 8px; font-size: .74rem; }
+.nav-item {
+  flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: none; border-radius: 16px; padding: 7px 4px; font-size: .68rem; color: var(--muted); letter-spacing: .02em;
+}
+.nav-item svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.nav-item.active { color: var(--accent-strong); background: var(--accent-soft); }
+.nav-badge { position: absolute; top: 3px; left: calc(50% + 8px); font-size: .6rem; background: var(--accent); color: var(--surface); border-radius: 99px; padding: 0 5px; line-height: 1.5; }
+.nav-badge:empty { display: none; }
+
+.welcome h2 { margin-bottom: 10px; }
+.welcome-steps { margin: 0; padding-left: 20px; display: grid; gap: 12px; font-size: .92rem; }
+.welcome-steps li { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.welcome-steps li.done span { text-decoration: line-through; color: var(--muted); }
+.welcome-steps li.done button { display: none; }
+.empty { text-align: center; color: var(--muted); }
+
+/* Réglages repliables */
+.fold > summary { list-style: none; cursor: pointer; display: flex; flex-direction: column; gap: 2px; position: relative; padding-right: 28px; }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary h2 { margin: 0; }
+.fold > summary::after {
+  content: ""; position: absolute; right: 4px; top: 12px; width: 8px; height: 8px;
+  border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(45deg); transition: transform .2s;
+}
+.fold[open] > summary::after { transform: rotate(-135deg); top: 16px; }
+.fold[open] > summary { margin-bottom: 18px; }
+.fold-sum { font-size: .82rem; color: var(--muted); }
+.fold[open] .fold-sum { display: none; }
+
+/* Quiz en fenêtre (feuille qui monte du bas sur mobile) */
+.sheet { position: fixed; inset: 0; z-index: 200; background: rgba(40, 30, 22, .35); display: flex; align-items: flex-end; justify-content: center; }
+.sheet[hidden] { display: none; }
+.sheet-panel {
+  background: var(--surface); width: min(760px, 100vw); max-height: 92vh; overflow: auto; overscroll-behavior: contain;
+  border-radius: 24px 24px 0 0; padding: 20px 20px calc(24px + env(safe-area-inset-bottom)); box-shadow: var(--shadow-lift);
+  animation: sheet-up .25s ease-out;
+}
+.sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.sheet-head h2 { font-size: 1.6rem; color: var(--accent-strong); }
+.sheet-close { background: var(--surface-2); width: 34px; height: 34px; padding: 0; border-radius: 50%; color: var(--muted); }
+body.sheet-open { overflow: hidden; }
+@keyframes sheet-up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (min-width: 800px) { .sheet { align-items: center; } .sheet-panel { border-radius: 24px; } }
 
 /* ---------- Résumé de la semaine */
 .summary { margin-bottom: 20px; }
@@ -197,6 +246,16 @@ button {
 .budget-bar > div { height: 100%; border-radius: 99px; background: var(--sage); }
 .budget-bar.over > div { background: var(--bad); }
 @media (max-width: 560px) { .budget-row { grid-template-columns: 1fr auto; } .budget-bar { grid-column: 1 / -1; grid-row: 2; } }
+
+/* Bilan de la semaine, replié sur une ligne */
+.week-stats { border-top: 1px solid var(--border); padding-top: 12px; }
+.week-stats > summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; position: relative; padding-right: 22px; }
+.week-stats > summary::-webkit-details-marker { display: none; }
+.week-stats > summary::after { content: ""; position: absolute; right: 4px; top: 7px; width: 7px; height: 7px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(45deg); transition: transform .2s; }
+.week-stats[open] > summary::after { transform: rotate(-135deg); top: 11px; }
+.week-stats[open] > summary { margin-bottom: 12px; }
+.ws-title { font-family: var(--font-title); font-size: 1.3rem; }
+.ws-line { font-size: .8rem; color: var(--muted); }
 
 /* ---------- Semaine */
 .week-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 20px; }
@@ -322,6 +381,28 @@ button {
 .custom-chip.none { opacity: .6; }
 .custom-chip button { background: none; padding: 0 6px; font-size: .78rem; color: var(--muted); }
 
+/* ---------- Avis et catalogue des recettes */
+.rate { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.rate-btn { background: none; border: 1px solid var(--border); padding: 4px 12px; font-size: .76rem; color: var(--muted); }
+.rate-btn:hover { border-color: var(--accent); color: var(--accent); }
+.rate-btn.on { border-color: var(--lola); color: var(--lola); background: color-mix(in srgb, var(--lola) 8%, transparent); }
+.rate-btn.on.no { border-color: var(--muted); color: var(--muted); background: var(--surface-2); }
+.love-mark { color: var(--lola); }
+.search { width: 100%; border-radius: 999px !important; margin-bottom: 12px; }
+.filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.filter { background: var(--surface); border: 1px solid var(--border); padding: 5px 14px; font-size: .8rem; color: var(--muted); }
+.filter.on { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 0 24px; }
+.catalog > .hint { grid-column: 1 / -1; }
+.recipe-card { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.recipe-card.disliked { opacity: .55; }
+.recipe-card details summary { cursor: pointer; font-family: var(--font-title); font-size: 1.25rem; list-style: none; margin-top: 2px; }
+.recipe-card details summary::-webkit-details-marker { display: none; }
+.recipe-meta { font-size: .72rem; color: var(--muted); letter-spacing: .02em; }
+.recipe-meta .mp { color: var(--p); }
+.ing-list { margin: 8px 0 4px; padding-left: 18px; font-size: .84rem; color: var(--text); }
+.ing-list li { margin: 2px 0; }
+
 /* ---------- Rappels d'eau */
 .water-step { border-color: var(--sage); color: var(--sage); font-size: .9rem; }
 .water-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
@@ -415,7 +496,7 @@ kbd { background: var(--surface); border: 1px solid var(--border); border-radius
 
 /* ---------- Appli installée (PWA) */
 .update-banner {
-  position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 100;
+  position: fixed; left: 50%; bottom: calc(92px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 100;
   display: flex; align-items: center; gap: 12px; width: max-content; max-width: calc(100vw - 32px);
   background: var(--text); color: var(--bg); padding: 8px 8px 8px 18px; border-radius: 999px;
   box-shadow: var(--shadow-lift); font-size: .86rem;
@@ -425,9 +506,10 @@ kbd { background: var(--surface); border: 1px solid var(--border); border-radius
 
 /* ---------- Impression */
 @media print {
-  .appbar, .setup, .quiz-card, .water-card, .actions, .tabs, .toolbar, .off-intro, .stock-card, .stock-actions, .hint, .drive-link, .icon-btn, .chip-btn, .link-btn, .footer, .update-banner { display: none !important; }
+  .bottom-nav, .page-actions, .welcome, .sheet, .appbar, .setup, .quiz-card, .water-card, .actions, .tabs, .toolbar, .off-intro, .stock-card, .stock-actions, .hint, .drive-link, .icon-btn, .chip-btn, .link-btn, .footer, .update-banner { display: none !important; }
   body { background: #fff; color: #000; }
-  .tab-panel[hidden] { display: block !important; }
+  .page[hidden] { display: block !important; }
+  #page-reglages, #page-recettes { display: none !important; }
   .card { box-shadow: none; border: none; padding: 0; }
   .day { break-inside: avoid; border: 1px solid #ccc; }
   .off-panel { display: none; }
