@@ -219,6 +219,8 @@ button {
   transition: transform .15s;
 }
 .meal details[open] summary::after { transform: rotate(-135deg); margin-bottom: 0; }
+.season-tag { font-size: .66rem; letter-spacing: .06em; color: var(--sage); border: 1px solid var(--sage); border-radius: 999px; padding: 0 7px; margin-left: 6px; vertical-align: 2px; white-space: nowrap; }
+.season-line { margin: 0 0 18px; font-size: .84rem; color: var(--muted); }
 .anti-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--sage); margin-left: 6px; vertical-align: middle; }
 .macros { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: .76rem; color: var(--muted); margin-top: 4px; }
 .macros .mp { color: var(--p); } .macros .mc { color: var(--c); } .macros .mf { color: var(--f); }

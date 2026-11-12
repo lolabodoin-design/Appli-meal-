@@ -427,9 +427,25 @@ function slotPool(d, slot, pools) {
   return pool;
 }
 
+// ---------- Saisonnalité (mois de saison des ingrédients frais, voir data.js)
+const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+const currentMonth = new Date().getMonth() + 1;
+const inSeason = ing => !ing.saison || ing.saison.includes(currentMonth);
+
+// 'saison' : tous ses produits frais saisonniers sont de saison ; 'hors' : au moins un ne l'est pas ;
+// null : la recette n'a pas de produit frais saisonnier
+function seasonOf(recipe) {
+  const seasonal = recipe.ingredients.map(([id]) => INGREDIENTS[id]).filter(ing => ing.saison);
+  if (!seasonal.length) return null;
+  return seasonal.every(inSeason) ? 'saison' : 'hors';
+}
+
 // Plus une recette correspond aux envies, plus elle a de chances d'être tirée
 function recipeWeight(r) {
   let w = 1;
+  const season = seasonOf(r);
+  if (season === 'saison') w *= 1.5;
+  if (season === 'hors') w *= 0.5;
   if (!allowedForAll(r)) w *= 0.6; // on préfère un peu un plat commun, plus simple à cuisiner
   if (state.quiz.moods.some(m => r.flags.has(m))) w *= 3;
   const cap = budgetCap();
@@ -441,6 +457,7 @@ function recipeWeight(r) {
 function preferenceScore(recipes) {
   return recipes.reduce((sum, r) => sum
     - (state.quiz.moods.some(m => r.flags.has(m)) ? 0.03 : 0)
+    - (seasonOf(r) === 'saison' ? 0.02 : 0) + (seasonOf(r) === 'hors' ? 0.03 : 0)
     + ((budgetCap() ?? 999) <= 120 && r.cher ? 0.05 : 0), 0);
 }
 
@@ -1060,7 +1077,7 @@ function recipeDetails(recipe, eaters, ctx = {}) {
   }).join('');
   return `
     <details>
-      <summary>${esc(recipe.name)}${recipe.anti ? ' <span class="anti-dot" title="Anti-inflammatoire"></span>' : ''}</summary>
+      <summary>${esc(recipe.name)}${recipe.anti ? ' <span class="anti-dot" title="Anti-inflammatoire"></span>' : ''}${seasonOf(recipe) === 'saison' ? ' <span class="season-tag">de saison</span>' : ''}</summary>
       <table class="qty-table">
         <thead><tr><th></th>${eaters.map(({ p }) => `<th>${who(p)}</th>`).join('')}${showTotal ? '<th>À cuisiner</th>' : ''}</tr></thead>
         <tbody>${rows}</tbody>
@@ -1120,6 +1137,12 @@ function dayBanners(d) {
   return b.map(([cls, text, why]) => `<div class="day-banner ${cls}">${text}${whyBox(why)}</div>`).join('');
 }
 
+// Fruits et légumes de saison ce mois-ci
+const seasonalNow = () => Object.values(INGREDIENTS)
+  .filter(ing => ing.saison?.includes(currentMonth))
+  .map(ing => ing.name.toLowerCase())
+  .join(', ');
+
 // Info du jour : change chaque jour, ou au clic sur ↻
 const FACT_LIST = Object.values(FACTS);
 let factIndex = Math.floor(Date.now() / 864e5) % FACT_LIST.length;
@@ -1153,6 +1176,7 @@ function renderWeek() {
       <p><b>Le savais-tu ?</b> ${esc(currentFact())}</p>
       <button type="button" class="chip-btn" id="btn-fact" title="Une autre info">↻</button>
     </div>
+    <p class="season-line">En ${MONTHS[currentMonth - 1]}, c'est la saison de : ${esc(seasonalNow())}.</p>
     <h3>Moyenne par jour sur la semaine</h3>
     ${budgetHtml}
     ${activePeople().map(p => {
