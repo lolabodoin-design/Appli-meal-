@@ -124,3 +124,13 @@ Ce choix est volontaire :
 ## Sources
 
 Valeurs nutritionnelles indicatives, d'après la table [Ciqual (ANSES)](https://ciqual.anses.fr/) et des étiquettes courantes.
+
+## Mode cuisine pas à pas (`cook.js`)
+
+Bouton « Cuisiner pas à pas » sous chaque recette (menu de la semaine et catalogue) :
+- écran plein, une étape à la fois (glisser ou boutons Précédent / Suivant, flèches au clavier) ;
+- écran d'ingrédients à cocher, avec les quantités réelles du menu (total + part de chacun) ;
+  dans le catalogue, un sélecteur de portions ;
+- minuteurs détectés dans le texte (« cuire 8 min » → bouton ⏱), sonnerie à la fin ;
+- l'écran reste allumé (API Wake Lock, si le navigateur la propose) ;
+- l'appli ne se recharge pas pour une mise à jour pendant qu'on cuisine.

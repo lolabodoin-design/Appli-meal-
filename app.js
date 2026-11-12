@@ -1105,6 +1105,15 @@ function recupReasons(recipe) {
 // Bouton « Pourquoi ? » dépliable
 const whyBox = text => `<details class="why"><summary>Pourquoi ?</summary><p>${esc(text)}</p></details>`;
 
+// Recettes ouvrables en mode cuisine (voir cook.js) : clé → recette + quantités à préparer
+const cookRegistry = new Map();
+let cookSeq = 0;
+function cookButton(data) {
+  const key = `c${++cookSeq}`;
+  cookRegistry.set(key, data);
+  return `<button type="button" class="cook-btn" data-cook="${key}">Cuisiner pas à pas</button>`;
+}
+
 // Tableau des quantités d'une recette pour un groupe de convives (+ total à cuisiner)
 function recipeDetails(recipe, eaters, ctx = {}) {
   const showTotal = eaters.length > 1;
@@ -1122,6 +1131,15 @@ function recipeDetails(recipe, eaters, ctx = {}) {
         <tbody>${rows}</tbody>
       </table>
       <p class="steps">${esc(recipe.steps)}</p>
+      ${cookButton({
+        recipe,
+        forWho: showTotal ? `Pour ${eaters.map(({ p }) => p.name).join(' et ')}` : `Pour ${eaters[0].p.name}`,
+        items: recipe.ingredients.map(([id], k) => ({
+          id,
+          g: eaters.reduce((a, { detail }) => a + detail.items[k].g, 0),
+          parts: showTotal ? eaters.map(({ p, detail }) => ({ name: p.name, g: detail.items[k].g })) : null,
+        })),
+      })}
       ${ctx.lendemain && recupReasons(recipe) ? `<div class="tip recup-tip"><b>Pourquoi ce plat aujourd'hui ?</b><ul>${recupReasons(recipe)}</ul></div>` : ''}
       ${recipeFact(recipe) ? `<div class="tip"><b>Le savais-tu ?</b> ${esc(recipeFact(recipe))}</div>` : ''}
       ${rateButtons(recipe)}
@@ -1382,6 +1400,7 @@ function renderCatalog() {
           <summary>${recipeTitle(r)}</summary>
           <ul class="ing-list">${r.ingredients.map(([id, g]) => `<li>${fmtQty(INGREDIENTS[id], g)} · ${esc(INGREDIENTS[id].name)}</li>`).join('')}</ul>
           <p class="steps">${esc(r.steps)}</p>
+          ${cookButton({ recipe: r, forWho: 'Portion de base', scalable: true, items: r.ingredients.map(([id, g]) => ({ id, g })) })}
           ${recipeFact(r) ? `<div class="tip"><b>Le savais-tu ?</b> ${esc(recipeFact(r))}</div>` : ''}
           ${forWho.length < people.length ? `<p class="hint">Convient à : ${esc(forWho.join(', ') || 'personne, avec vos régimes actuels')}</p>` : ''}
         </details>
@@ -2147,7 +2166,7 @@ function registerServiceWorker() {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!hadController && !updateRequested) return;
     updateRequested = false;
-    if (!$('#quiz-sheet').hidden) return; // on ne coupe pas le quiz en plein milieu
+    if (!$('#quiz-sheet').hidden || window.cookIsOpen?.()) return; // on ne coupe pas le quiz ni la cuisine en plein milieu
     location.reload();
   });
 }

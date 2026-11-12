@@ -179,6 +179,24 @@
   </nav>
 
   <!-- ============ Guide « Remplir mon panier » en cartes ============ -->
+  <!-- Mode cuisine pas à pas (cook.js) -->
+  <div id="cook" class="cook" role="dialog" aria-modal="true" aria-labelledby="cook-title" hidden>
+    <div class="cook-head">
+      <button type="button" class="sheet-close" id="cook-close" aria-label="Quitter le mode cuisine">✕</button>
+      <div class="cook-head-txt">
+        <span class="cook-count" id="cook-count"></span>
+        <h2 id="cook-title"></h2>
+      </div>
+    </div>
+    <div class="cook-bar"><div class="cook-progress" id="cook-progress"></div></div>
+    <div class="cook-timers" id="cook-timers" aria-live="polite" hidden></div>
+    <div class="cook-body" id="cook-body"></div>
+    <div class="cook-foot">
+      <button type="button" class="ghost" id="cook-prev">Précédent</button>
+      <button type="button" id="cook-next">Suivant</button>
+    </div>
+  </div>
+
   <div id="guide-sheet" class="sheet" hidden>
     <div class="sheet-panel guide-panel" role="dialog" aria-modal="true" aria-label="Comment remplir votre panier Leclerc">
       <div class="sheet-head">
@@ -252,5 +270,6 @@
   <script src="data.js"></script>
   <script src="drive-stock.js"></script>
   <script src="app.js"></script>
+  <script src="cook.js"></script>
 </body>
 </html>

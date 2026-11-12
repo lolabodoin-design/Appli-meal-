@@ -615,3 +615,78 @@ kbd { background: var(--surface); border: 1px solid var(--border); border-radius
 /* Sécurité : la page ne doit jamais défiler sur le côté */
 html, body { overflow-x: hidden; }
 @supports (overflow: clip) { html, body { overflow-x: clip; } }
+
+/* ---------- Mode cuisine pas à pas */
+.cook-btn {
+  display: inline-flex; align-items: center; gap: 6px; margin: 4px 0 10px;
+  background: var(--accent); color: var(--surface); padding: 10px 20px; font-size: .86rem;
+}
+.cook-btn::before { content: ''; width: 14px; height: 14px; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E") center / contain no-repeat; }
+.cook-btn:hover { background: var(--accent-strong); }
+
+.cook {
+  position: fixed; inset: 0; z-index: 300; background: var(--bg); color: var(--text);
+  display: flex; flex-direction: column;
+  padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 14px);
+}
+.cook[hidden] { display: none; }
+html.cooking, html.cooking body { overflow: hidden; }
+.cook-head { display: flex; align-items: center; gap: 12px; max-width: 720px; width: 100%; margin: 0 auto; }
+.cook-head-txt { min-width: 0; }
+.cook-count { font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.cook-head h2 { font-family: var(--font-title); font-weight: 400; font-size: 1.25rem; color: var(--accent-strong); margin: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cook-bar { height: 3px; background: var(--surface-2); border-radius: 3px; margin: 14px auto 0; max-width: 720px; width: 100%; overflow: hidden; }
+.cook-progress { height: 100%; width: 0; background: var(--sage); border-radius: 3px; transition: width .3s ease; }
+
+.cook-timers { display: flex; gap: 8px; flex-wrap: wrap; max-width: 720px; width: 100%; margin: 12px auto 0; }
+.cook-timers[hidden] { display: none; }
+.cook-timer { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 999px; padding: 6px 6px 6px 14px; }
+.ct-time { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1.05rem; }
+.ct-label { color: var(--muted); font-size: .8rem; }
+.ct-x { background: var(--surface-2); color: var(--muted); width: 28px; height: 28px; padding: 0; font-size: .75rem; }
+.cook-timer.done { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, var(--surface)); animation: ct-pulse 1s ease-in-out infinite; }
+.cook-timer.done .ct-time { color: var(--bad); }
+@keyframes ct-pulse { 50% { transform: scale(1.04); } }
+@media (prefers-reduced-motion: reduce) { .cook-timer.done { animation: none; } }
+
+.cook-body { flex: 1; overflow-y: auto; max-width: 720px; width: 100%; margin: 0 auto; padding: 22px 2px;
+  display: flex; flex-direction: column; justify-content: center; -webkit-overflow-scrolling: touch; }
+.cook-kicker { color: var(--muted); margin: 0 0 6px; font-size: .9rem; }
+.cook-hint { color: var(--muted); font-size: .88rem; margin: 6px 0 14px; }
+.cook-step { font-size: clamp(1.35rem, 5.4vw, 1.9rem); line-height: 1.45; margin: 0 0 22px; }
+
+.cook-servings { display: flex; align-items: center; gap: 8px; margin: 4px 0 6px; }
+.cook-servings button { width: 38px; height: 38px; padding: 0; font-size: 1.2rem; border: 1px solid var(--border); color: var(--text); }
+
+.cook-ings { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.cook-ing { width: 100%; display: flex; align-items: center; gap: 14px; text-align: left; font-weight: 400;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; font-size: 1.02rem; }
+.ci-box { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border); display: grid; place-items: center; }
+.cook-ing.on { opacity: .55; }
+.cook-ing.on .ci-box { background: var(--sage); border-color: var(--sage); }
+.cook-ing.on .ci-box::after { content: ''; width: 9px; height: 5px; border: 2px solid var(--surface); border-top: 0; border-right: 0; transform: translateY(-1px) rotate(-45deg); }
+.cook-ing.on .ci-txt { text-decoration: line-through; }
+.ci-txt small { display: block; color: var(--muted); font-size: .8rem; margin-top: 2px; }
+
+.cook-timer-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.cook-start { background: var(--sage-soft); color: var(--text); border-color: var(--sage); padding: 12px 20px; font-size: 1rem; }
+.cook-start:hover { background: var(--sage); color: var(--surface); }
+.cook-need { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cook-need > span:first-child { font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.cook-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; font-size: .86rem; }
+
+.cook-end { text-align: center; color: var(--accent); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.cook-end h3 { font-family: var(--font-title); font-weight: 400; font-size: 2rem; color: var(--accent-strong); margin: 6px 0 0; }
+.cook-end .rate-btn { padding: 10px 20px; font-size: .9rem; }
+
+.cook-foot { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; max-width: 720px; width: 100%; margin: 0 auto; }
+.cook-foot button { padding: 16px; font-size: 1rem; }
+#cook-prev { border: 1px solid var(--border); color: var(--text); }
+#cook-prev:disabled { opacity: .35; cursor: default; }
+#cook-next { background: var(--accent); color: var(--surface); }
+#cook-next:hover { background: var(--accent-strong); }
+@media print { .cook, .cook-btn { display: none !important; } }
