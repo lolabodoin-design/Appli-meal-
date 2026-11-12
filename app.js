@@ -976,9 +976,16 @@ function importStock(text) {
   let data;
   try { data = JSON.parse(text); } catch { data = null; }
   if (!data || data.type !== 'stock-drive' || !data.resultats) return false;
-  state.stock = { magasin: data.magasin, date: data.date, items: data.resultats };
+  // On garde les résultats d'un passage précédent (relance après un arrêt anti-robot)
+  const previous = state.stock?.magasin === data.magasin ? state.stock.items : {};
+  state.stock = { magasin: data.magasin, date: data.date, items: { ...previous, ...data.resultats } };
+  // Les aliments bien ajoutés au panier Leclerc sont cochés dans la liste
+  let added = 0;
+  for (const [id, r] of Object.entries(data.resultats)) {
+    if (r?.ajoute && INGREDIENTS[id] && !state.checked[id]) { state.checked[id] = true; added++; }
+  }
   saveState();
-  return true;
+  return { added };
 }
 
 // Ingrédients de la liste actuelle introuvables ou en rupture au Drive (hors placard)
@@ -1894,8 +1901,17 @@ function bindEvents() {
   window.addEventListener('message', e => {
     let host = '';
     try { host = new URL(e.origin).hostname; } catch { return; }
-    if (e.data !== 'mp-get-list' || !/(^|\.)leclercdrive\.fr$/.test(host)) return;
-    e.source?.postMessage({ type: 'mp-list', list: lastDriveList || JSON.stringify(cartExport()) }, e.origin);
+    if (!/(^|\.)leclercdrive\.fr$/.test(host)) return;
+    if (e.data === 'mp-get-list') {
+      e.source?.postMessage({ type: 'mp-list', list: lastDriveList || JSON.stringify(cartExport()) }, e.origin);
+    } else if (e.data?.type === 'mp-result' && typeof e.data.payload === 'string') {
+      // Le favori a fini : on coche ce qui est dans le panier Leclerc
+      const res = importStock(e.data.payload);
+      if (res) {
+        render();
+        e.source?.postMessage({ type: 'mp-result-ok', added: res.added }, e.origin);
+      }
+    }
   });
 
   $('#btn-copy-drive').addEventListener('click', async e => {

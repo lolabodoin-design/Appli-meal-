@@ -198,6 +198,11 @@ function leclercStockCheck() {
   // Autre voie, indépendante de l'adresse : on demande la liste à l'onglet de l'appli qui a ouvert Leclerc
   var APP_ORIGIN = 'https://lolabodoin-design.github.io';
   window.addEventListener('message', function (e) {
+    if (e.origin === APP_ORIGIN && e.data && e.data.type === 'mp-result-ok') {
+      var el = root.getElementById('sync');
+      if (el) { el.className = 'ok'; el.textContent = '✓ ' + e.data.added + ' aliment' + (e.data.added > 1 ? 's' : '') + ' coché' + (e.data.added > 1 ? 's' : '') + ' dans ta liste de courses de l\'appli.'; }
+      return;
+    }
     if (e.origin !== APP_ORIGIN || !e.data || e.data.type !== 'mp-list' || sentList) return;
     sentList = e.data.list;
     if (root.getElementById('in') && !stopped) showInput('');
@@ -305,8 +310,12 @@ function leclercStockCheck() {
     }).join('');
 
     var payload = JSON.stringify({ v: 1, type: 'stock-drive', magasin: base, date: new Date().toISOString(), resultats: results });
+    // Renvoie le résultat à l'onglet de l'appli : il coche tout seul les aliments ajoutés au panier
+    var synced = false;
+    try { if (fill && window.opener) { window.opener.postMessage({ type: 'mp-result', payload: payload }, APP_ORIGIN); synced = true; } } catch (e) { /* appli fermée */ }
     body.innerHTML = (msg ? '<p class="warn">' + esc(msg) + '</p>' : '')
-      + (fill ? '<p class="ok"><b>' + added + '</b> produit' + (added > 1 ? 's' : '') + ' ajouté' + (added > 1 ? 's' : '') + ' à ton panier. Recharge la page du Drive pour le voir, vérifie-le, puis valide ta commande.</p>' : '')
+      + (fill ? '<p class="ok"><b>' + added + '</b> produit' + (added > 1 ? 's' : '') + ' ajouté' + (added > 1 ? 's' : '') + ' à ton panier. Recharge la page du Drive pour le voir, vérifie-le, puis valide ta commande.</p>'
+        + '<p class="muted" id="sync">' + (synced ? 'Envoi à l\'appli…' : 'Pour cocher ces aliments dans l\'appli : « Copier le résultat pour l\'appli », puis colle-le dans Courses → Options avancées.') + '</p>' : '')
       + '<p><b>' + ok + '</b> produits en stock · <b>' + ko + '</b> à remplacer</p>'
       + (left ? '<p class="muted"><b>' + left + '</b> produit' + (left > 1 ? 's' : '') + ' pas encore traité' + (left > 1 ? 's' : '') + '. Relance un peu plus tard : ce qui est déjà dans ton panier ne sera pas ajouté deux fois.</p>' : '')
       + '<div class="tot">Total estimé : ' + euros(total) + '</div>'
