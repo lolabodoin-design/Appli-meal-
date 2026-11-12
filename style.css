@@ -120,7 +120,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .unit { font-weight: 400; color: var(--muted); font-size: .76rem; }
 .hint { color: var(--muted); font-size: .82rem; margin: 10px 0 0; }
 .hint.top { margin: -6px 0 18px; }
-.hint.warn { color: var(--bad); font-weight: 500; }
+.hint.warn, .hint .warn { color: var(--bad); font-weight: 500; }
+.avoid-hint b { font-weight: 500; color: var(--text); }
 
 .check { flex-direction: row; align-items: center; gap: 8px; color: var(--text); font-size: .9rem; cursor: pointer; font-weight: 500; }
 .check input { width: 17px; height: 17px; accent-color: var(--accent); margin: 0; }

@@ -97,13 +97,29 @@ const DISLIKES = {
 };
 
 // « Pas envie de » libre : un mot tapé par l'utilisateur → ingrédients correspondants
-const normText = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+const normText = s => String(s).toLowerCase().replace(/œ/g, 'oe').replace(/æ/g, 'ae').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+// Familles qu'on peut écrire en toutes lettres (« poisson », « produits laitiers »…)
+const FAMILY_TERMS = { poisson: 'poisson', viande: 'viande', porc: 'porc', cochon: 'porc', laitage: 'lactose', laitier: 'lactose', lactose: 'lactose', whey: 'whey' };
+const stemWord = w => (w.length > 3 ? w.replace(/(s|x)$/, '') : w);
 function ingredientsMatching(term) {
-  const t = normText(term).replace(/(s|x)$/, ''); // « tomates » → « tomate »
+  const t = normText(term);
   if (t.length < 3) return [];
+  if (/viandes? rouges?/.test(t)) {
+    return Object.keys(INGREDIENTS).filter(id => (INGREDIENTS[id].tags || []).includes('viande') && !/poulet|dinde|volaille/.test(normText(INGREDIENTS[id].name)));
+  }
+  const words = t.split(' ');
+  const family = words.map(w => FAMILY_TERMS[stemWord(w)]).find(Boolean);
+  // Un mot du nom correspond s'il est identique au singulier près, ou commence par le terme
+  // (« oeufs » n'attrape pas « bœuf », « noix » n'attrape pas « noir »)
+  const wordHit = (w, q) => w === q || stemWord(w) === stemWord(q) || (q.length >= 4 && w.startsWith(q));
+  const hit = txt => {
+    const ws = normText(txt).split(' ');
+    return words.length === 1 ? ws.some(w => wordHit(w, t)) : (' ' + ws.join(' ')).includes(' ' + t);
+  };
   return Object.keys(INGREDIENTS).filter(id => {
     const ing = INGREDIENTS[id];
-    return normText(ing.name).includes(t) || normText(ing.search).includes(t) || normText(id).includes(t);
+    if (family && (ing.tags || []).includes(family)) return true;
+    return hit(ing.name) || hit(ing.search) || hit(id);
   });
 }
 const customDislikeIds = () => [...new Set(state.quiz.custom.flatMap(ingredientsMatching))];
@@ -392,7 +408,16 @@ function householdAllows(recipe) {
 }
 
 // Régime propre à chaque personne
-const personAllows = (recipe, person) => REGIMES[person.regime]?.allows(recipe) ?? true;
+// + ce que la personne a écrit dans « Ce que … ne mange pas » (texte libre)
+const avoidTerms = text => String(text || '').split(/[,;\/\n]|\s+et\s+/i).map(t => t.trim()).filter(t => t.length > 1);
+const avoidCache = new Map();
+function personAvoidIds(person) {
+  const key = person.avoid || '';
+  if (!avoidCache.has(key)) avoidCache.set(key, [...new Set(avoidTerms(key).flatMap(ingredientsMatching))]);
+  return avoidCache.get(key);
+}
+const personAllows = (recipe, person) =>
+  (REGIMES[person.regime]?.allows(recipe) ?? true) && !personAvoidIds(person).some(id => recipe.ingIds.has(id));
 const allowedForAll = recipe => activePeople().every(p => personAllows(recipe, p));
 
 // Recettes possibles par type de repas : pour une personne, ou pour le foyer
@@ -413,6 +438,7 @@ function pickVariants(d, slot, recipe, exclude) {
   for (const p of activePeople()) {
     if (!personEats(p, slot) || personAllows(recipe, p)) continue;
     const v = weightedPick(slotPool(d, slot, recipePools(p)), exclude);
+    if (!v) continue; // aucune recette possible pour elle : elle garde le plat commun
     variants[p.id] = v;
     exclude.push(v);
   }
@@ -1451,7 +1477,8 @@ function closeQuiz() {
 
 // Une ligne de résumé pour chaque réglage replié, et le nombre d'envies sur le bouton du quiz
 function renderSummaries() {
-  $('#sum-foyer').textContent = state.people.map(p => `${p.name} · ${REGIMES[p.regime].label.toLowerCase()}`).join('  —  ');
+  $('#sum-foyer').textContent = state.people.map(p => `${p.name} · ${REGIMES[p.regime].label.toLowerCase()}`
+    + (avoidTerms(p.avoid).length ? ` · sans ${avoidTerms(p.avoid).join(', ')}` : '')).join('  —  ');
   const temps = TIME_OPTIONS.find(([k]) => k === state.prefs.temps);
   const budget = BUDGET_OPTIONS.find(([k]) => k === state.prefs.budget);
   $('#sum-prefs').textContent = [temps?.[1].split(' :')[0], budget?.[1], driveStoreBase() ? 'Drive Leclerc' : 'pas de magasin'].filter(Boolean).join(' · ');
@@ -1617,12 +1644,30 @@ function personSummary(p) {
       <div class="person-tags">
         <span>${esc(labelOf(PROFILE_OPTIONS.objectif, p.profile.objectif).split(' (')[0])}</span>
         <span>${esc(REGIMES[p.regime].label)}</span>
+        ${avoidTerms(p.avoid).length ? `<span>Sans ${esc(avoidTerms(p.avoid).join(', '))}</span>` : ''}
         <span>${p.profile.poids} kg</span>
         <span>${waterGoal(p)} L d'eau / jour</span>
         <span>${p.collation ? 'Avec collation' : 'Sans collation'}</span>
       </div>
       <div class="person-macros"><b>${T.kcal}</b> kcal · <span class="mp">P ${T.p} g</span> · <span class="mc">G ${T.c} g</span> · <span class="mf">L ${T.f} g</span></div>
     </div>`;
+}
+
+// Ce que l'appli a compris du texte libre « ne mange pas »
+function avoidHint(p) {
+  const terms = avoidTerms(p.avoid);
+  if (!terms.length) return 'Allergies, aliments que vous n\'aimez pas… séparés par des virgules.';
+  const parts = terms.map(t => {
+    const ids = ingredientsMatching(t);
+    return ids.length
+      ? `<b>${esc(t)}</b> → ${ids.map(id => esc(INGREDIENTS[id].name)).join(', ')}`
+      : `<b>${esc(t)}</b> → absent de nos recettes`;
+  });
+  const pools = recipePools(p);
+  const empty = ['petitdej', 'plat', ...(p.collation ? ['collation'] : [])].filter(k => !pools[k].length)
+    .map(k => ({ petitdej: 'petit-déjeuner', plat: 'plat', collation: 'collation' }[k]));
+  return `Compris : ${parts.join(' · ')}`
+    + (empty.length ? `<br><span class="warn">Plus aucun ${empty.join(', ')} possible pour ${esc(p.name)} : allège la liste.</span>` : '');
 }
 
 function personForm(p) {
@@ -1637,6 +1682,12 @@ function personForm(p) {
         <select data-field="regime">${options(Object.entries(REGIMES).map(([k, r]) => [k, r.label]), p.regime)}</select>
       </label>
       <p class="hint regime-desc">${esc(REGIMES[p.regime].desc)}</p>
+
+      <label class="field-label">Ce que ${esc(p.name)} ne mange pas
+        <input type="text" data-field="avoid" value="${esc(p.avoid || '')}" maxlength="200" autocomplete="off"
+          placeholder="ex. champignons, crevettes, avocat">
+      </label>
+      <p class="hint avoid-hint">${avoidHint(p)}</p>
 
       <div class="grid-form">
         <label>Sexe <select data-profile="sexe">${options(PROFILE_OPTIONS.sexe, p.profile.sexe)}</select></label>
@@ -1696,6 +1747,13 @@ function prefsChanged() {
 
 function bindEvents() {
   // Formulaires des personnes (délégation)
+  // Retour immédiat pendant la saisie de « ne mange pas »
+  $('#people').addEventListener('input', e => {
+    if (e.target.dataset.field !== 'avoid') return;
+    const card = e.target.closest('[data-person]');
+    const p = personById(card.dataset.person);
+    card.querySelector('.avoid-hint').innerHTML = avoidHint({ ...p, avoid: e.target.value });
+  });
   $('#people').addEventListener('change', e => {
     const card = e.target.closest('[data-person]');
     if (!card) return;
@@ -1708,6 +1766,10 @@ function bindEvents() {
     } else if (field === 'collation') {
       p.collation = e.target.checked;
       rebalancePlan();
+    } else if (field === 'avoid') {
+      p.avoid = e.target.value.trim();
+      card.querySelector('.avoid-hint').innerHTML = avoidHint(p);
+      if (state.plan) showNotice(`Aliments à éviter pour ${p.name} modifiés : clique sur « Régénérer » pour les appliquer au menu.`);
     } else if (field === 'regime') {
       p.regime = e.target.value;
       card.querySelector('.regime-desc').textContent = REGIMES[p.regime].desc;
