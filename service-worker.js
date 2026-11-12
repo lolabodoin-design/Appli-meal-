@@ -6,7 +6,7 @@
      le navigateur détecte alors le nouveau service worker, l'appli affiche
      « Nouvelle version disponible » et recharge les nouveaux fichiers.
    ============================================================ */
-const VERSION = 'v1.3.0';
+const VERSION = 'v2.0.0';
 const CACHE = `menu-proteine-${VERSION}`;
 
 const FILES = [
@@ -17,15 +17,17 @@ const FILES = [
   'data.js',
   'drive-stock.js',
   'app.js',
-  'bg-pattern.svg',
   'manifest.json',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/apple-touch-icon.png',
-  'fonts/fredoka-latin.woff2',
-  'fonts/fredoka-latin-ext.woff2',
-  'fonts/nunito-latin.woff2',
-  'fonts/nunito-latin-ext.woff2',
+  'icons/logo.svg',
+  'fonts/cormorant-garamond-latin.woff2',
+  'fonts/cormorant-garamond-latin-ext.woff2',
+  'fonts/cormorant-garamond-italic-latin.woff2',
+  'fonts/cormorant-garamond-italic-latin-ext.woff2',
+  'fonts/dm-sans-latin.woff2',
+  'fonts/dm-sans-latin-ext.woff2',
 ];
 
 self.addEventListener('install', event => {

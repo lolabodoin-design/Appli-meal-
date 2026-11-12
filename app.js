@@ -5,14 +5,14 @@
 // ============================================================
 const STORAGE_KEY = 'menu-proteine-v2';
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-const DAY_EMOJIS = ['🥦', '🥕', '🍅', '🥑', '🍋', '🍓', '🫐'];
+const DAY_EMOJIS = ['', '', '', '', '', '', '']; // le thème épuré n'affiche plus d'emoji
 
 // Chaque portion peut être agrandie ou réduite dans ces limites (1 = portion de base)
 const SLOTS = {
-  petitdej:  { label: 'Petit-déjeuner', icon: '🥣', type: 'petitdej',  min: 0.6, max: 2.2 },
-  dejeuner:  { label: 'Déjeuner',       icon: '🥗', type: 'plat',      min: 0.6, max: 2.6 },
-  collation: { label: 'Collation',      icon: '🍎', type: 'collation', min: 0.5, max: 2.5 },
-  diner:     { label: 'Dîner',          icon: '🍲', type: 'plat',      min: 0.6, max: 2.6 },
+  petitdej:  { label: 'Petit-déjeuner', icon: '', type: 'petitdej',  min: 0.6, max: 2.2 },
+  dejeuner:  { label: 'Déjeuner',       icon: '', type: 'plat',      min: 0.6, max: 2.6 },
+  collation: { label: 'Collation',      icon: '', type: 'collation', min: 0.5, max: 2.5 },
+  diner:     { label: 'Dîner',          icon: '', type: 'plat',      min: 0.6, max: 2.6 },
 };
 
 const MACROS = ['kcal', 'p', 'c', 'f'];
@@ -39,7 +39,7 @@ const REGIMES = {
     allows: r => !r.tags.has('viande') && !r.tags.has('poisson'),
   },
   anti: {
-    label: 'Anti-inflammatoire 🌿',
+    label: 'Anti-inflammatoire',
     desc: "Riche en oméga-3 (saumon, sardines, noix), en antioxydants (fruits rouges, légumes verts, curcuma) et en fibres. Huile d'olive ; pas de viande rouge, de charcuterie ni de sucres ajoutés.",
     allows: r => r.anti === true,
   },
@@ -47,49 +47,49 @@ const REGIMES = {
 
 // Temps en cuisine les soirs de semaine (le week-end, pas de limite)
 const TIME_OPTIONS = [
-  ['express', '⚡ Express : 15 min max en semaine', 15],
-  ['normal', '⏱️ Normal : 30 min max en semaine', 30],
-  ['chef', "👩‍🍳 On aime cuisiner : pas de limite", 999],
+  ['express', 'Express : 15 min max en semaine', 15],
+  ['normal', 'Normal : 30 min max en semaine', 30],
+  ['chef', "On aime cuisiner : pas de limite", 999],
 ];
 // Budget courses du foyer pour la semaine (plafond = haut de la tranche)
 const BUDGET_OPTIONS = [
-  ['libre', '💶 Pas de limite', null],
-  ['90', '🪙 Moins de 90 € / semaine', 90],
-  ['120', '💶 90 à 120 € / semaine', 120],
-  ['150', '💶 120 à 150 € / semaine', 150],
-  ['180', '💰 150 à 180 € / semaine', 180],
+  ['libre', 'Pas de limite', null],
+  ['90', 'Moins de 90 € / semaine', 90],
+  ['120', '90 à 120 € / semaine', 120],
+  ['150', '120 à 150 € / semaine', 150],
+  ['180', '150 à 180 € / semaine', 180],
 ];
 // On achète des paquets entiers et il y a des restes : +15 % sur le coût des quantités utilisées
 const WASTE = 1.15;
 
 // ---------- Quiz « Nos envies de la semaine »
 const MOODS = [
-  ['frais', '🥗', 'Frais & léger', 'Salades, bowls, poke'],
-  ['reconfort', '🍲', 'Réconfortant', 'Plats chauds, gratins, soupes'],
-  ['epice', '🌶️', 'Épicé & voyage', 'Curry, chili, fajitas, pad thaï'],
-  ['iode', '🐟', 'Iodé', 'Poissons et fruits de mer'],
-  ['vegetal', '🌱', 'Plus végétal', 'Légumineuses, tofu, œufs'],
+  ['frais', '', 'Frais & léger', 'Salades, bowls, poke'],
+  ['reconfort', '', 'Réconfortant', 'Plats chauds, gratins, soupes'],
+  ['epice', '', 'Épicé & voyage', 'Curry, chili, fajitas, pad thaï'],
+  ['iode', '', 'Iodé', 'Poissons et fruits de mer'],
+  ['vegetal', '', 'Plus végétal', 'Légumineuses, tofu, œufs'],
 ];
 const LUNCH_OPTIONS = [
-  ['maison', '🏠', 'À la maison', 'On cuisine le midi'],
-  ['box', '🥡', 'En lunch box', 'Des plats qui se transportent et se réchauffent bien'],
-  ['cantine', '🍴', 'Cantine / resto', 'Pas de déjeuner à cuisiner du lundi au vendredi'],
+  ['maison', '', 'À la maison', 'On cuisine le midi'],
+  ['box', '', 'En lunch box', 'Des plats qui se transportent et se réchauffent bien'],
+  ['cantine', '', 'Cantine / resto', 'Pas de déjeuner à cuisiner du lundi au vendredi'],
 ];
 const PLAISIR_OPTIONS = [
-  ['', '🙅', 'Non merci', 'On reste sage'],
-  ['4', '🍕', 'Vendredi soir', 'Pour fêter la fin de semaine'],
-  ['5', '🍔', 'Samedi soir', 'Burger, pizza, fajitas…'],
-  ['6', '🌮', 'Dimanche soir', 'Avant de reprendre la semaine'],
+  ['', '', 'Non merci', 'On reste sage'],
+  ['4', '', 'Vendredi soir', 'Pour fêter la fin de semaine'],
+  ['5', '', 'Samedi soir', 'Burger, pizza, fajitas…'],
+  ['6', '', 'Dimanche soir', 'Avant de reprendre la semaine'],
 ];
 const hasIng = (...ids) => r => ids.some(id => r.ingIds.has(id));
 const DISLIKES = {
-  poisson:      { icon: '🐟', label: 'Poisson & fruits de mer', test: r => r.tags.has('poisson') },
-  viande:       { icon: '🥩', label: 'Viande', test: r => r.tags.has('viande') },
-  tofu:         { icon: '🧊', label: 'Tofu', test: hasIng('tofu') },
-  oeufs:        { icon: '🥚', label: 'Œufs', test: hasIng('oeufs', 'blancoeuf') },
-  laitiers:     { icon: '🥛', label: 'Produits laitiers', test: r => r.tags.has('lactose') },
-  legumineuses: { icon: '🫘', label: 'Légumineuses', test: hasIng('lentilles', 'poischiches', 'harirouges', 'edamame', 'houmous', 'petitspois') },
-  whey:         { icon: '🥤', label: 'Protéine en poudre', test: r => r.tags.has('whey') },
+  poisson:      { icon: '', label: 'Poisson & fruits de mer', test: r => r.tags.has('poisson') },
+  viande:       { icon: '', label: 'Viande', test: r => r.tags.has('viande') },
+  tofu:         { icon: '', label: 'Tofu', test: hasIng('tofu') },
+  oeufs:        { icon: '', label: 'Œufs', test: hasIng('oeufs', 'blancoeuf') },
+  laitiers:     { icon: '', label: 'Produits laitiers', test: r => r.tags.has('lactose') },
+  legumineuses: { icon: '', label: 'Légumineuses', test: hasIng('lentilles', 'poischiches', 'harirouges', 'edamame', 'houmous', 'petitspois') },
+  whey:         { icon: '', label: 'Protéine en poudre', test: r => r.tags.has('whey') },
 };
 
 // « Pas envie de » libre : un mot tapé par l'utilisateur → ingrédients correspondants
@@ -108,15 +108,15 @@ const customDislikeIds = () => [...new Set(state.quiz.custom.flatMap(ingredients
 // (part des calories de la journée + répartition des macros) pour rééquilibrer le reste
 const EXTERNAL = {
   restau: {
-    label: 'Restaurant', icon: '🍽️', share: 0.40, split: { p: 0.18, c: 0.42, f: 0.40 },
-    tip: 'Une viande ou un poisson grillé avec des légumes, et on partage le dessert 😉. Le reste de la journée est allégé.',
+    label: 'Restaurant', icon: '', share: 0.40, split: { p: 0.18, c: 0.42, f: 0.40 },
+    tip: 'Une viande ou un poisson grillé avec des légumes, et on partage le dessert . Le reste de la journée est allégé.',
   },
   soiree: {
-    label: 'Soirée', icon: '🎉', share: 0.50, split: { p: 0.10, c: 0.40, f: 0.35 }, // le reste ≈ alcool
+    label: 'Soirée', icon: '', share: 0.50, split: { p: 0.10, c: 0.40, f: 0.35 }, // le reste ≈ alcool
     tip: "Mange avant de partir et bois un verre d'eau entre chaque verre. Demain, plats hydratants et digestes.",
   },
   cantine: {
-    label: 'Cantine / resto du midi', icon: '🍴', share: 0.32, split: { p: 0.20, c: 0.45, f: 0.35 },
+    label: 'Cantine / resto du midi', icon: '', share: 0.32, split: { p: 0.20, c: 0.45, f: 0.35 },
     tip: 'Une source de protéines + des légumes : le dîner complète ce qui manque.',
   },
 };
@@ -960,11 +960,11 @@ function renderStockSummary() {
     <div class="stock-summary">
       <div class="stock-total"><span>Total estimé au Drive</span><b>${total.toFixed(2).replace('.', ',')} €</b></div>
       <div class="stock-stats">
-        <span>✅ ${ok} en stock</span><span>❌ ${missing} à remplacer</span>
+        <span>${ok} en stock</span><span>${missing} à remplacer</span>
         <span class="muted">Vérifié ${esc(date)}</span>
       </div>
       <div class="stock-actions">
-        ${ruptures.length ? `<button type="button" class="primary small" data-stock="adapt">🔁 Adapter le menu au stock (${ruptures.length} produit${ruptures.length > 1 ? 's' : ''} en rupture)</button>` : ''}
+        ${ruptures.length ? `<button type="button" class="primary small" data-stock="adapt">Adapter le menu au stock (${ruptures.length} produit${ruptures.length > 1 ? 's' : ''} en rupture)</button>` : ''}
         <button type="button" class="ghost" data-stock="clear">Oublier ce stock</button>
       </div>
     </div>${excluded}`;
@@ -974,10 +974,10 @@ function stockLine(id) {
   const r = state.stock?.items[id];
   if (!r) return '';
   if (r.statut === 'ok') {
-    return `<span class="item-stock ok">🏪 <a href="${esc(r.produit.url)}" target="_blank" rel="noopener">${esc(r.produit.nom)}</a>
+    return `<span class="item-stock ok"><a href="${esc(r.produit.url)}" target="_blank" rel="noopener">${esc(r.produit.nom)}</a>
       · ${r.quantite} × ${r.produit.prix.toFixed(2).replace('.', ',')} € · ${r.produit.stock} en stock</span>`;
   }
-  return `<span class="item-stock ko">${r.statut === 'rupture' ? '❌ En rupture au Drive' : '❓ Introuvable au Drive'}</span>`;
+  return `<span class="item-stock ko">${r.statut === 'rupture' ? 'En rupture au Drive' : 'Introuvable au Drive'}</span>`;
 }
 
 // ============================================================
@@ -1060,14 +1060,14 @@ function recipeDetails(recipe, eaters, ctx = {}) {
   }).join('');
   return `
     <details>
-      <summary>${esc(recipe.name)}${recipe.anti ? ' <span title="Anti-inflammatoire">🌿</span>' : ''}</summary>
+      <summary>${esc(recipe.name)}${recipe.anti ? ' <span class="anti-dot" title="Anti-inflammatoire"></span>' : ''}</summary>
       <table class="qty-table">
         <thead><tr><th></th>${eaters.map(({ p }) => `<th>${who(p)}</th>`).join('')}${showTotal ? '<th>À cuisiner</th>' : ''}</tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <p class="steps">${esc(recipe.steps)}</p>
-      ${ctx.lendemain && recupReasons(recipe) ? `<div class="tip recup-tip"><b>💧 Pourquoi ce plat aujourd'hui ?</b><ul>${recupReasons(recipe)}</ul></div>` : ''}
-      ${recipeFact(recipe) ? `<div class="tip"><b>💡 Le savais-tu ?</b> ${esc(recipeFact(recipe))}</div>` : ''}
+      ${ctx.lendemain && recupReasons(recipe) ? `<div class="tip recup-tip"><b>Pourquoi ce plat aujourd'hui ?</b><ul>${recupReasons(recipe)}</ul></div>` : ''}
+      ${recipeFact(recipe) ? `<div class="tip"><b>Le savais-tu ?</b> ${esc(recipeFact(recipe))}</div>` : ''}
     </details>`;
 }
 
@@ -1076,8 +1076,8 @@ function renderMeal(meal, d, i) {
   const recipe = RECIPE_BY_ID[meal.recipeId];
   const ctx = dayContext(d);
   const tags = [
-    meal.slot === 'dejeuner' && ctx.lunch === 'box' && recipe.flags.has('box') ? '🥡 à emporter' : '',
-    meal.slot === 'diner' && ctx.plaisir && recipe.flags.has('plaisir') ? '😋 plaisir' : '',
+    meal.slot === 'dejeuner' && ctx.lunch === 'box' && recipe.flags.has('box') ? 'à emporter' : '',
+    meal.slot === 'diner' && ctx.plaisir && recipe.flags.has('plaisir') ? 'plaisir' : '',
   ].filter(Boolean).map(t => `<span class="meal-tag">${t}</span>`).join('');
   const eaters = state.people
     .map(p => ({ p, detail: mealDetail(meal, p.id) }))
@@ -1085,7 +1085,7 @@ function renderMeal(meal, d, i) {
   const common = eaters.filter(({ p }) => !meal.variants?.[p.id]);
   const variantBlocks = eaters.filter(({ p }) => meal.variants?.[p.id]).map(x => `
     <div class="variant">
-      <span class="variant-label">🔀 Variante pour ${who(x.p)} · ${esc(REGIMES[x.p.regime].label)}</span>
+      <span class="variant-label">Variante pour ${who(x.p)} · ${esc(REGIMES[x.p.regime].label)}</span>
       ${recipeDetails(recipeOf(meal, x.p.id), [x], ctx)}
     </div>`).join('');
 
@@ -1093,7 +1093,7 @@ function renderMeal(meal, d, i) {
     <div class="meal">
       <div class="meal-top">
         <span class="meal-slot">${SLOTS[meal.slot].icon} ${SLOTS[meal.slot].label} · ${recipe.time} min ${tags}</span>
-        <button type="button" class="icon-btn" data-swap="${d},${i}" title="Proposer une autre recette">🔄 changer</button>
+        <button type="button" class="icon-btn" data-swap="${d},${i}" title="Proposer une autre recette">Changer</button>
       </div>
       ${common.length ? recipeDetails(recipe, common, ctx) : ''}
       ${variantBlocks}
@@ -1113,10 +1113,10 @@ function personBars(day, d) {
 function dayBanners(d) {
   const ctx = dayContext(d);
   const b = [];
-  if (ctx.lendemain) b.push(['recup', "💧 Lendemain de soirée : plats hydratants et digestes, journée un peu plus légère (-10 % kcal, moins de gras). Pense à boire beaucoup d'eau !", WHY.recup]);
-  if (ctx.event === 'soiree') b.push(['party', '🎉 Soirée ce soir : le petit-déjeuner et le déjeuner sont ajustés pour compenser.', WHY.soiree]);
-  if (ctx.event === 'restau') b.push(['party', '🍽️ Resto ce soir : les autres repas sont allégés pour compenser.', WHY.restau]);
-  if (ctx.plaisir) b.push(['plaisir', '😋 Soirée petit plaisir : un plat gourmand, mais toujours calé sur vos macros.', WHY.plaisir]);
+  if (ctx.lendemain) b.push(['recup', "Lendemain de soirée : plats hydratants et digestes, journée un peu plus légère (-10 % kcal, moins de gras). Pense à boire beaucoup d'eau !", WHY.recup]);
+  if (ctx.event === 'soiree') b.push(['party', 'Soirée ce soir : le petit-déjeuner et le déjeuner sont ajustés pour compenser.', WHY.soiree]);
+  if (ctx.event === 'restau') b.push(['party', 'Resto ce soir : les autres repas sont allégés pour compenser.', WHY.restau]);
+  if (ctx.plaisir) b.push(['plaisir', 'Soirée petit plaisir : un plat gourmand, mais toujours calé sur vos macros.', WHY.plaisir]);
   return b.map(([cls, text, why]) => `<div class="day-banner ${cls}">${text}${whyBox(why)}</div>`).join('');
 }
 
@@ -1131,7 +1131,7 @@ function renderWeek() {
     <article class="card day">
       <div class="day-head">
         <h3><span class="day-emoji" aria-hidden="true">${DAY_EMOJIS[d]}</span>${DAYS[d]}</h3>
-        <button type="button" class="icon-btn" data-reday="${d}" title="Régénérer toute la journée">🎲 journée</button>
+        <button type="button" class="icon-btn" data-reday="${d}" title="Régénérer toute la journée">↻ Refaire</button>
       </div>
       ${dayBanners(d)}
       ${day.meals.map((m, i) => renderMeal(m, d, i)).join('')}
@@ -1142,14 +1142,14 @@ function renderWeek() {
   const cost = weekCost();
   const budgetHtml = `
     <div class="budget-row">
-      <span>💶 Coût estimé de la semaine</span>
+      <span>Coût estimé de la semaine</span>
       ${cap ? `<div class="budget-bar ${cost > cap ? 'over' : ''}"><div style="width:${Math.min(100, (cost / cap) * 100)}%"></div></div>` : '<span></span>'}
       <b>${euros(cost)}${cap ? ` / ${cap} €` : ''}</b>
     </div>
     ${cap && cost > cap ? `<p class="hint warn">Au-dessus de votre budget : régénère la semaine, choisis une tranche plus haute ou le régime végétarien, souvent moins cher.</p>` : ''}`;
   $('#week-summary').innerHTML = `
     <div class="fact-card">
-      <span class="fact-icon" aria-hidden="true">💡</span>
+      <span class="fact-icon" aria-hidden="true"></span>
       <p><b>Le savais-tu ?</b> ${esc(currentFact())}</p>
       <button type="button" class="chip-btn" id="btn-fact" title="Une autre info">↻</button>
     </div>
@@ -1172,7 +1172,7 @@ const nutriBadge = grade => grade
 const fmtNum = v => (v === null ? '?' : String(Math.round(v * 10) / 10).replace('.', ','));
 
 function renderProductPanel(id) {
-  if (offLoading.has(id)) return `<div class="off-panel"><p class="hint">⏳ Recherche des produits sur Open Food Facts…</p></div>`;
+  if (offLoading.has(id)) return `<div class="off-panel"><p class="hint">Recherche des produits sur Open Food Facts…</p></div>`;
   if (offErrors[id]) {
     return `<div class="off-panel"><p class="hint warn">${esc(offErrors[id])}</p>
       <button type="button" class="chip-btn" data-off-retry="${id}">↻ Réessayer</button></div>`;
@@ -1185,7 +1185,7 @@ function renderProductPanel(id) {
     <div class="products">
       ${products.map(p => `
         <div class="product ${p.code === chosen ? 'chosen' : ''}">
-          ${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy">` : '<div class="img-ph">🛒</div>'}
+          ${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy">` : '<div class="img-ph"></div>'}
           <div class="product-info">
             <a class="product-name" href="https://fr.openfoodfacts.org/produit/${esc(p.code)}" target="_blank" rel="noopener">${esc(p.name)}</a>
             <span class="product-brand">${esc([p.brand, p.quantity].filter(Boolean).join(' · '))}</span>
@@ -1206,9 +1206,9 @@ function renderShopping() {
   $('#use-real').checked = state.useRealNutrition;
 
   renderStockSummary();
-  $('#checkout').innerHTML = `💶 Estimation en caisse : <b>${euros(checkoutCost())}</b>
+  $('#checkout').innerHTML = `Estimation en caisse : <b>${euros(checkoutCost())}</b>
     <small>${state.stock ? 'prix réels du Drive quand ils sont connus' : 'prix indicatifs'} · paquets entiers · hors placard et lignes cochées${budgetCap() ? ` · budget ${budgetCap()} €` : ''}</small>`;
-  const warning = driveStoreBase() ? '' : `<p class="hint warn">⚠️ Renseigne votre magasin Leclerc Drive dans « Nos préférences » pour que les liens lancent directement la recherche du produit.</p>`;
+  const warning = driveStoreBase() ? '' : `<p class="hint warn">Renseigne votre magasin Leclerc Drive dans « Nos préférences » pour que les liens lancent directement la recherche du produit.</p>`;
   $('#shopping').innerHTML = warning + groups.map(({ rayon, items }) => `
     <div class="rayon">
       <h3>${rayon}${rayon === 'Placard' ? ' <span class="rayon-note">— vérifie que tu en as déjà</span>' : ''}</h3>
@@ -1228,8 +1228,8 @@ function renderShopping() {
           </label>
           <div class="item-actions">
             ${offLinkable(ing)
-              ? `<button type="button" class="chip-btn ${offOpen.has(id) ? 'active' : ''}" data-off-toggle="${id}">🔎 Produits réels</button>`
-              : '<span class="fresh-tag">🥬 Produit frais</span>'}
+              ? `<button type="button" class="chip-btn ${offOpen.has(id) ? 'active' : ''}" data-off-toggle="${id}">Produits réels</button>`
+              : '<span class="fresh-tag">Produit frais</span>'}
             <a class="drive-link" href="${esc(searchUrl(driveTerm(id)))}" target="_blank" rel="noopener">Leclerc Drive ↗</a>
           </div>
           ${offOpen.has(id) ? renderProductPanel(id) : ''}
@@ -1241,7 +1241,7 @@ function renderShopping() {
 function render() {
   const has = Boolean(state.plan);
   $('#results').hidden = !has;
-  $('#btn-generate').textContent = has ? '🎲 Régénérer toute la semaine' : '✨ Générer notre menu de la semaine';
+  $('#btn-generate').textContent = has ? 'Régénérer la semaine' : 'Générer notre menu';
   if (!has) return;
   renderWeek();
   renderShopping();
@@ -1262,14 +1262,14 @@ function quizRecap() {
   const events = Object.entries(q.events).sort().map(([d, k]) => `${EXTERNAL[k].icon} ${EXTERNAL[k].label} ${DAYS[d].toLowerCase()} soir`);
   const lunch = LUNCH_OPTIONS.find(o => o[0] === q.lunch);
   const plaisir = PLAISIR_OPTIONS.find(o => o[0] === String(q.plaisirDay ?? ''));
-  const dislikes = [...q.dislikes.map(k => `${DISLIKES[k].icon} ${DISLIKES[k].label}`), ...q.custom.map(t => `🚫 ${esc(t)}`)];
+  const dislikes = [...q.dislikes.map(k => `${DISLIKES[k].icon} ${DISLIKES[k].label}`), ...q.custom.map(t => esc(t))];
   const row = (step, label, value) => `
     <div class="recap-row"><span class="recap-label">${label}</span><span class="recap-value">${value}</span>
       <button type="button" class="link-btn" data-q-nav="goto-${step}">Modifier</button></div>`;
   return `
     <div class="quiz-q">
       <span class="quiz-num">Récapitulatif</span>
-      <h3>Votre semaine en un coup d'œil ✨</h3>
+      <h3>Votre semaine en un coup d'œil</h3>
       <div class="recap">
         ${row(0, 'Envies', moods.join(', ') || 'Pas de préférence')}
         ${row(1, 'Sorties', events.join(', ') || 'Aucune')}
@@ -1280,7 +1280,7 @@ function quizRecap() {
     </div>
     <div class="quiz-nav">
       <button type="button" class="ghost" data-q-nav="prev">← Retour</button>
-      <button type="button" class="primary small" data-q-nav="generate">✨ Générer avec ces envies</button>
+      <button type="button" class="primary small" data-q-nav="generate">Générer avec ces envies</button>
     </div>`;
 }
 
@@ -1296,7 +1296,7 @@ function renderQuiz() {
     body = `<h3>Des sorties de prévues ?</h3><p class="hint">Resto ou soirée : pas de dîner à cuisiner, et le reste de la journée est rééquilibré. Le lendemain d'une soirée, on vous prépare des plats « récup ».</p>
       <div class="events">${DAYS.map((day, d) => `
         <div class="event-row"><span class="event-day">${DAY_EMOJIS[d]} ${day} soir</span>
-          <div class="seg">${[['', 'Rien'], ['restau', '🍽️ Resto'], ['soiree', '🎉 Soirée']].map(([v, l]) =>
+          <div class="seg">${[['', 'Rien'], ['restau', 'Resto'], ['soiree', 'Soirée']].map(([v, l]) =>
             `<button type="button" class="${(q.events[d] || '') === v ? 'on' : ''}" data-q="event" data-d="${d}" data-v="${v}">${l}</button>`).join('')}</div>
         </div>`).join('')}</div>`;
   } else if (quizStep === 2) {
@@ -1306,7 +1306,7 @@ function renderQuiz() {
     body = `<h3>Pas envie de… cette semaine ?</h3><p class="hint">Les recettes qui en contiennent seront écartées.</p>
       <div class="quiz-options small">${Object.entries(DISLIKES).map(([k, d]) => quizOption('dislikes', k, d.icon, d.label, '', q.dislikes.includes(k))).join('')}</div>
       <div class="custom-dislike">
-        <label class="field-label" for="custom-dislike">✍️ Un autre aliment ?</label>
+        <label class="field-label" for="custom-dislike">Un autre aliment ?</label>
         <div class="custom-row">
           <input type="text" id="custom-dislike" placeholder="ex. brocoli, thon, pois chiches…" maxlength="30" autocomplete="off">
           <button type="button" class="secondary" data-custom-add>Ajouter</button>
@@ -1314,7 +1314,7 @@ function renderQuiz() {
         <div class="custom-chips">${q.custom.map((term, i) => {
           const found = ingredientsMatching(term).map(id => INGREDIENTS[id].name);
           return `<span class="custom-chip ${found.length ? '' : 'none'}" title="${esc(found.join(', ') || 'Aucun ingrédient trouvé dans nos recettes')}">
-            🚫 ${esc(term)} <small>${found.length ? `(${found.length} ingrédient${found.length > 1 ? 's' : ''})` : '(introuvable)'}</small>
+            ${esc(term)} <small>${found.length ? `(${found.length} ingrédient${found.length > 1 ? 's' : ''})` : '(introuvable)'}</small>
             <button type="button" data-custom-remove="${i}" aria-label="Retirer">✕</button></span>`;
         }).join('')}</div>
       </div>`;
@@ -1396,14 +1396,14 @@ function personSummary(p) {
     <div class="person person-${p.id} saved" data-person="${p.id}">
       <div class="person-head">
         <span class="person-title">${esc(p.name)}</span>
-        <button type="button" class="chip-btn" data-edit>✏️ Modifier</button>
+        <button type="button" class="chip-btn" data-edit>Modifier</button>
       </div>
       <div class="person-tags">
-        <span>🎯 ${esc(labelOf(PROFILE_OPTIONS.objectif, p.profile.objectif).split(' (')[0])}</span>
-        <span>🍽️ ${esc(REGIMES[p.regime].label)}</span>
-        <span>⚖️ ${p.profile.poids} kg</span>
-        <span>💧 ${waterGoal(p)} L d'eau / jour</span>
-        <span>${p.collation ? '🍎 Avec collation' : '🚫 Sans collation'}</span>
+        <span>${esc(labelOf(PROFILE_OPTIONS.objectif, p.profile.objectif).split(' (')[0])}</span>
+        <span>${esc(REGIMES[p.regime].label)}</span>
+        <span>${p.profile.poids} kg</span>
+        <span>${waterGoal(p)} L d'eau / jour</span>
+        <span>${p.collation ? 'Avec collation' : 'Sans collation'}</span>
       </div>
       <div class="person-macros"><b>${T.kcal}</b> kcal · <span class="mp">P ${T.p} g</span> · <span class="mc">G ${T.c} g</span> · <span class="mf">L ${T.f} g</span></div>
     </div>`;
@@ -1465,7 +1465,7 @@ function fillForms() {
   $('#budget').innerHTML = options(BUDGET_OPTIONS, state.prefs.budget);
   renderQuiz();
   $('#drive-url').value = state.driveUrl;
-  $('#drive-status').textContent = driveStoreBase() ? '✅ Magasin reconnu' : '';
+  $('#drive-status').textContent = driveStoreBase() ? 'Magasin reconnu ·' : '';
   $('#drive-open').href = driveStoreBase() ? `${driveStoreBase()}/recherche.aspx?TexteRecherche=` : 'https://www.leclercdrive.fr/';
 }
 
@@ -1536,7 +1536,7 @@ function bindEvents() {
   $('#drive-url').addEventListener('change', e => {
     state.driveUrl = e.target.value.trim();
     saveState();
-    $('#drive-status').textContent = !state.driveUrl ? '' : driveStoreBase() ? '✅ Magasin reconnu' : '❌ Adresse non reconnue (elle doit contenir leclercdrive.fr/magasin-…)';
+    $('#drive-status').textContent = !state.driveUrl ? '' : driveStoreBase() ? 'Magasin reconnu ·' : 'Adresse non reconnue (elle doit contenir leclercdrive.fr/magasin-…)';
     if (state.plan) renderShopping();
   });
 
@@ -1593,11 +1593,11 @@ function bindEvents() {
   $('#btn-copy').addEventListener('click', async e => {
     try {
       await navigator.clipboard.writeText(listAsText());
-      e.target.textContent = '✅ Copiée !';
+      e.target.textContent = 'Copiée !';
     } catch {
-      e.target.textContent = '❌ Copie impossible';
+      e.target.textContent = 'Copie impossible';
     }
-    setTimeout(() => { e.target.textContent = '📋 Copier'; }, 1800);
+    setTimeout(() => { e.target.textContent = 'Copier'; }, 1800);
   });
 
   $('#btn-download').addEventListener('click', () => {
@@ -1615,18 +1615,18 @@ function bindEvents() {
   bm.href = 'javascript:' + encodeURIComponent(`(${leclercStockCheck.toString()})()`);
   bm.addEventListener('click', e => {
     e.preventDefault();
-    bm.textContent = '👆 Glisse-moi dans la barre de favoris';
-    setTimeout(() => { bm.textContent = '🥑 Stock Drive'; }, 2500);
+    bm.textContent = 'Glisse-moi dans la barre de favoris';
+    setTimeout(() => { bm.textContent = 'Stock Drive'; }, 2500);
   });
 
   $('#btn-copy-drive').addEventListener('click', async e => {
     try {
       await navigator.clipboard.writeText(JSON.stringify(cartExport()));
-      e.target.textContent = `✅ ${cartExport().articles.length} produits copiés`;
+      e.target.textContent = `${cartExport().articles.length} produits copiés`;
     } catch {
-      e.target.textContent = '❌ Copie impossible';
+      e.target.textContent = 'Copie impossible';
     }
-    setTimeout(() => { e.target.textContent = '📋 Copier la liste pour le Drive'; }, 2500);
+    setTimeout(() => { e.target.textContent = 'Copier la liste pour le Drive'; }, 2500);
   });
 
   $('#btn-import-stock').addEventListener('click', () => {
@@ -1672,8 +1672,8 @@ function bindEvents() {
 // ============================================================
 const VAPID_PUBLIC_KEY = 'BGBCOspq8oPslC0c4yFnDw7d2UuhCt5QAZx_wDGNO3_oK1xw0NDx6E_IkhXAcr2rPLhrz_-WTXAM24FMpGoWemc';
 const WATER_RHYTHMS = [
-  ['4x', '💧 4 rappels : 9 h, 12 h, 15 h, 18 h'],
-  ['hourly', '⏰ Toutes les heures de 9 h à 21 h'],
+  ['4x', '4 rappels : 9 h, 12 h, 15 h, 18 h'],
+  ['hourly', 'Toutes les heures de 9 h à 21 h'],
 ];
 const SECRETS_URL = 'https://github.com/lolabodoin-design/Appli-meal-/settings/secrets/actions';
 
@@ -1710,11 +1710,11 @@ async function renderWater() {
     </div>`;
 
   if (!pushSupported() || !location.protocol.startsWith('http')) {
-    el.innerHTML = `<p class="hint">Les rappels fonctionnent depuis l'appli installée sur ton téléphone (iPhone : iOS 16.4 ou plus, ouverte depuis l'icône 🥑 de l'écran d'accueil).</p>`;
+    el.innerHTML = `<p class="hint">Les rappels fonctionnent depuis l'appli installée sur ton téléphone (iPhone : iOS 16.4 ou plus, ouverte depuis son icône sur l'écran d'accueil).</p>`;
     return;
   }
   if (/iPhone|iPad/.test(navigator.userAgent) && !isStandalone()) {
-    el.innerHTML = `<p class="hint">📱 Sur iPhone, ouvre l'appli <b>depuis l'icône 🥑 de ton écran d'accueil</b> (pas depuis Safari) pour activer les rappels.</p>`;
+    el.innerHTML = `<p class="hint">Sur iPhone, ouvre l'appli <b>depuis son icône sur ton écran d'accueil</b> (pas depuis Safari) pour activer les rappels.</p>`;
     return;
   }
   if (Notification.permission === 'denied') {
@@ -1725,16 +1725,16 @@ async function renderWater() {
   const sub = await currentSubscription();
   if (!sub) {
     el.innerHTML = `${settings}
-      <button type="button" class="primary small" id="btn-water-on">🔔 Activer les rappels d'eau</button>
+      <button type="button" class="primary small" id="btn-water-on">Activer les rappels d'eau</button>
       <p class="hint">Ton téléphone va te demander l'autorisation d'afficher des notifications : réponds « Autoriser ».</p>`;
     return;
   }
   el.innerHTML = `${settings}
-    <p class="water-ok">✅ Rappels activés sur ce téléphone</p>
+    <p class="water-ok">Rappels activés sur ce téléphone</p>
     <div class="water-steps">
       <p><b>Dernière étape (une seule fois)</b> : donner ce téléphone au robot GitHub.</p>
       <ol>
-        <li><button type="button" class="secondary" id="btn-water-copy">📋 Copier le code de ce téléphone</button></li>
+        <li><button type="button" class="secondary" id="btn-water-copy">Copier le code de ce téléphone</button></li>
         <li>Ouvre <a href="${SECRETS_URL}" target="_blank" rel="noopener">les secrets du dépôt GitHub</a> (connecté à ton compte).</li>
         <li><b>New repository secret</b> → Name : <code>PUSH_SUBSCRIPTIONS</code> → colle le code dans <i>Secret</i> → <b>Add secret</b>.
           <br><small>Pour le téléphone de Barnabé : modifie ce secret et colle son code <b>sur une nouvelle ligne</b>.</small></li>
@@ -1742,7 +1742,7 @@ async function renderWater() {
       <p class="hint">Si tu changes le rythme ou le prénom, recopie le code et remplace-le dans le secret.</p>
     </div>
     <div class="water-actions">
-      <button type="button" class="chip-btn" id="btn-water-test">🔔 Tester sur ce téléphone</button>
+      <button type="button" class="chip-btn" id="btn-water-test">Tester sur ce téléphone</button>
       <button type="button" class="ghost" id="btn-water-off">Désactiver</button>
     </div>`;
 }
@@ -1772,14 +1772,14 @@ function bindWaterEvents() {
       const sub = await currentSubscription();
       try {
         await navigator.clipboard.writeText(subscriptionCode(sub));
-        e.target.textContent = '✅ Code copié !';
+        e.target.textContent = 'Code copié !';
       } catch {
         prompt('Copie ce code :', subscriptionCode(sub));
       }
     } else if (id === 'btn-water-test') {
       const reg = await navigator.serviceWorker.ready;
       reg.showNotification(`💧 ${state.water.prenom}, un verre d'eau ?`, {
-        body: 'Test local : les notifications s\'affichent bien sur ce téléphone 🎉', icon: 'icons/icon-192.png', tag: 'rappel-eau',
+        body: 'Test local : les notifications s\'affichent bien sur ce téléphone ', icon: 'icons/icon-192.png', tag: 'rappel-eau',
       });
     } else if (id === 'btn-water-off') {
       const sub = await currentSubscription();

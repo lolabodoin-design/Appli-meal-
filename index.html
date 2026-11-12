@@ -7,13 +7,14 @@
   <meta name="description" content="Le menu healthy du foyer, calé sur vos macros, avec la liste de courses Leclerc Drive.">
   <!-- Appli installable (PWA) -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#3a9d5d">
+  <meta name="theme-color" content="#f8f4ee">
+  <link rel="icon" type="image/svg+xml" href="icons/logo.svg">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Menu Protéiné">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Le menu">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="stylesheet" href="fonts.css">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -21,7 +22,7 @@
   <header class="appbar">
     <div class="wrap appbar-inner">
       <div class="brand">
-        <span class="logo" aria-hidden="true">🥑</span>
+        <span class="logo" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M33 33 C32.5 25 36 19 44 15.5 C44.5 23.5 40.5 29.5 33 33 Z"/><path d="M34.5 30.5 L41.5 19.5"/><path d="M30.5 33 C30 28 27 24.5 21.5 23.5 C21.5 28.5 24.5 32 30.5 33 Z"/><path d="M8 33 H56"/><path d="M10 33 C10.5 44.5 19.5 52 32 52 C44.5 52 53.5 44.5 54 33"/><path d="M25 52 L26.5 56 H37.5 L39 52"/></svg></span>
         <div>
           <h1>Le menu de la semaine</h1>
         </div>
@@ -76,14 +77,14 @@
     </div>
 
     <div class="actions">
-      <button type="button" id="btn-generate" class="primary">✨ Générer notre menu de la semaine</button>
+      <button type="button" id="btn-generate" class="primary">Générer notre menu</button>
       <p id="notice" class="notice" hidden></p>
     </div>
 
     <div id="results" hidden>
       <nav class="tabs" role="tablist">
-        <button type="button" role="tab" class="tab active" data-tab="menu">📅 Menu</button>
-        <button type="button" role="tab" class="tab" data-tab="courses">🛒 Courses <span id="count" class="badge"></span></button>
+        <button type="button" role="tab" class="tab active" data-tab="menu">Menu</button>
+        <button type="button" role="tab" class="tab" data-tab="courses">Courses <span id="count" class="badge"></span></button>
       </nav>
 
       <section id="tab-menu" class="tab-panel">
@@ -94,25 +95,25 @@
       <section id="tab-courses" class="tab-panel" hidden>
         <div class="card">
           <div class="toolbar">
-            <button type="button" id="btn-copy" class="secondary">📋 Copier</button>
-            <button type="button" id="btn-download" class="secondary">⬇️ Télécharger</button>
-            <button type="button" id="btn-print" class="secondary">🖨️ Imprimer</button>
+            <button type="button" id="btn-copy" class="secondary">Copier</button>
+            <button type="button" id="btn-download" class="secondary">Télécharger</button>
+            <button type="button" id="btn-print" class="secondary">Imprimer</button>
             <button type="button" id="btn-uncheck" class="ghost">Tout décocher</button>
           </div>
           <details class="stock-card" id="stock-card">
             <summary>
-              <span class="stock-logo" aria-hidden="true">🏪</span>
+              <span class="stock-logo" aria-hidden="true"></span>
               <span><b>Stock réel de notre Drive</b><br><small>Vérifie ce qui est vraiment disponible dans ton magasin, avec les prix, et adapte le menu aux ruptures.</small></span>
             </summary>
             <ol class="stock-steps">
               <li><b>Une seule fois :</b> glisse ce bouton dans ta barre de favoris →
-                <a id="bm-link" class="bookmarklet" href="#">🥑 Stock Drive</a>
+                <a id="bm-link" class="bookmarklet" href="#">Stock Drive</a>
                 <small>(barre de favoris invisible ? <kbd>Ctrl/⌘ + Maj + B</kbd>)</small></li>
-              <li><button type="button" id="btn-copy-drive" class="secondary">📋 Copier la liste pour le Drive</button></li>
-              <li>Ouvre <a id="drive-open" href="https://www.leclercdrive.fr/" target="_blank" rel="noopener">ton magasin Leclerc Drive</a>, clique sur le favori <b>🥑 Stock Drive</b>, colle la liste et lance la vérification (≈ 3 s par produit).</li>
+              <li><button type="button" id="btn-copy-drive" class="secondary">Copier la liste pour le Drive</button></li>
+              <li>Ouvre <a id="drive-open" href="https://www.leclercdrive.fr/" target="_blank" rel="noopener">ton magasin Leclerc Drive</a>, clique sur le favori <b>Stock Drive</b>, colle la liste et lance la vérification (≈ 3 s par produit).</li>
               <li>Clique sur « Copier le résultat pour l'appli » puis colle-le ici :
                 <textarea id="stock-in" placeholder='{"v":1,"type":"stock-drive",…}'></textarea>
-                <button type="button" id="btn-import-stock" class="secondary">📥 Importer le stock</button></li>
+                <button type="button" id="btn-import-stock" class="secondary">Importer le stock</button></li>
             </ol>
             <p class="hint">Le favori lit les pages de recherche dans <b>ta</b> session, une recherche toutes les 3 secondes. Il n'ajoute rien au panier et s'arrête si Leclerc demande une vérification anti-robot.</p>
           </details>
@@ -120,7 +121,7 @@
           <p class="checkout" id="checkout"></p>
 
           <div class="off-intro">
-            <span class="off-logo" aria-hidden="true">🔎</span>
+            <span class="off-logo" aria-hidden="true"></span>
             <div>
               <p><b>Vrais produits avec Open Food Facts.</b> Clique sur « Produits réels » pour voir les produits les plus achetés en France, avec leur Nutri-Score, puis choisis le tien. Le lien Leclerc Drive cherchera alors ce produit précis.</p>
               <label class="check"><input type="checkbox" id="use-real"> Utiliser les valeurs nutritionnelles des produits choisis dans le calcul des portions</label>
@@ -133,11 +134,11 @@
   </main>
 
   <footer class="wrap footer">
-    Valeurs nutritionnelles indicatives (table Ciqual, étiquettes, <a href="https://fr.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a>). Ceci n'est pas un avis médical. 🌱
+    Valeurs nutritionnelles indicatives (table Ciqual, étiquettes, <a href="https://fr.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a>). Ceci n'est pas un avis médical. 
   </footer>
 
   <div id="update-banner" class="update-banner" hidden>
-    <span>✨ Nouvelle version de l'appli disponible</span>
+    <span>Nouvelle version de l'appli disponible</span>
     <button type="button" id="btn-update">Mettre à jour</button>
   </div>
 

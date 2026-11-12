@@ -43,17 +43,24 @@ Les données de chaque appareil (profils, menu, cases cochées) sont conservées
 6. **Vrais produits (Open Food Facts)** : dans la liste de courses, le bouton « 🔎 Produits réels » affiche les produits les plus scannés en France pour chaque ingrédient, avec la marque, le Nutri-Score et les valeurs pour 100 g. On choisit son produit : le lien Leclerc Drive cherche alors ce produit précis. Une option permet de recalculer les portions avec les valeurs réelles des produits choisis.
 7. **Liste de courses** : les ingrédients sont additionnés sur la semaine, regroupés par rayon et convertis en conditionnements du commerce (barquettes, pots, pièces). Pour chaque produit, un bouton lance la recherche dans **ton magasin Leclerc Drive**. On peut aussi copier la liste, la télécharger en .txt ou l'imprimer.
 
+## Identité visuelle
+
+Thème « clean » inspiré d'un mood board (noix de coco, bowl en bois, peignoir en lin) :
+- **Couleurs** : ivoire `#F8F4EE`, blanc coco `#FFFDFA`, lin `#F2ECE3`, bois de noyer `#6B5444` (couleur principale), sauge `#8FA382` (touche « healthy ») ; mode sombre espresso et sable.
+- **Typographie** : Cormorant Garamond pour les titres, DM Sans pour le texte.
+- **Logo** : un bol dessiné au trait fin, d'où sortent deux feuilles (`icons/logo.svg`).
+- Interface sans emojis (sauf 💧 pour l'hydratation), lignes fines, beaucoup d'espace, ombres très légères.
+
 ## Structure
 
 | Fichier | Rôle |
 |---|---|
 | `index.html` | Structure de la page |
-| `style.css` | Mise en forme : thème « healthy », polices Fredoka et Nunito, mode clair/sombre, mobile, impression |
-| `bg-pattern.svg` | Motif de fond : fruits et légumes dessinés |
+| `style.css` | Mise en forme : thème épuré (ivoire, lin, bois de noyer, sauge), mode clair/sombre, mobile, impression |
 | `data.js` | Base de données : 70 ingrédients (valeurs pour 100 g), 77 recettes (17 petits-déjeuners, 47 plats, 13 collations ; au moins 8 choix par type de repas pour chaque régime) et les étiquettes du quiz |
 | `drive-stock.js` | Favori « Stock Drive » : vérifie le stock réel du magasin Leclerc Drive |
-| `manifest.json`, `service-worker.js`, `icons/` | Appli installable (PWA) : nom, icône, mode hors connexion, mises à jour |
-| `fonts.css`, `fonts/` | Polices Fredoka et Nunito en local (licence OFL) pour le mode hors connexion |
+| `manifest.json`, `service-worker.js`, `icons/` (logo « bol au trait fin ») | Appli installable (PWA) : nom, icône, mode hors connexion, mises à jour |
+| `fonts.css`, `fonts/` | Polices Cormorant Garamond (titres) et DM Sans (texte) en local (licence OFL) pour le mode hors connexion |
 | `app.js` | Logique : calcul des besoins, optimisation, Open Food Facts, affichage, liste de courses |
 
 ## Algorithme de planification
