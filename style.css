@@ -811,3 +811,8 @@ html.cooking, html.cooking body { overflow: hidden; }
 .ph-tip { background: var(--sage-soft); border-radius: var(--radius-sm); padding: 10px 12px; font-size: .88rem; margin: 10px 0; }
 .ph-today { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 10px; font-size: .86rem; }
 .ph-today ul { list-style: none; padding: 0; margin: 6px 0 0; color: var(--muted); }
+.ph-shot { border: 1px solid var(--border); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 999px; padding: 11px 22px; font-weight: 500; }
+.ph-thumb { display: block; width: 96px; height: 96px; object-fit: cover; border-radius: 14px; margin-top: 8px; box-shadow: var(--shadow); }
+.ph-steps button:disabled { opacity: .45; cursor: default; }
+.ph-alt { display: block; margin-top: 6px; padding: 0; font-size: .76rem; text-decoration: underline; text-underline-offset: 3px; text-align: left; }
+.ph-shot.primary { border-color: var(--accent); }

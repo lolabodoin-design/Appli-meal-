@@ -162,6 +162,28 @@
   const SLOT_ORDER = ['petitdej', 'dejeuner', 'collation', 'diner'];
   let photoSlot = null;
   let photoResult = null;
+  let photoFile = null, photoUrl = null;
+
+  // Photo réduite (1600 px max, JPEG) : plus légère à partager, suffisante pour l'analyse
+  function preparePhoto(file) {
+    const img = new Image();
+    const src = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, 1600 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(src);
+      c.toBlob(b => {
+        photoFile = new File([b], 'mon-assiette.jpg', { type: 'image/jpeg' });
+        if (photoUrl) URL.revokeObjectURL(photoUrl);
+        photoUrl = URL.createObjectURL(photoFile);
+        renderPhoto('Photo prête : touche « Envoyer à Claude ».');
+      }, 'image/jpeg', 0.85);
+    };
+    img.onerror = () => { photoFile = file; renderPhoto('Photo prête : touche « Envoyer à Claude ».'); };
+    img.src = src;
+  }
   const photos = () => (state.photoLog ||= {});
   const r0 = n => Math.round(Number(n) || 0);
 
@@ -249,9 +271,13 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
       <div class="ph-slots">${SLOT_ORDER.map(k => `<button type="button" class="chip-btn ${k === photoSlot ? 'active' : ''}" data-ph-slot="${k}">${SLOTS[k].label}</button>`).join('')}</div>
       <p class="hint">${plan ? `Prévu : <b>${esc(plan.name)}</b> · ${r0(plan.detail.totals.kcal)} kcal` : 'Pas de repas prévu pour ce créneau : Claude estimera sans comparer.'}</p>
       <ol class="ph-steps">
-        <li><button type="button" class="primary small" data-ph-copy>Copier la consigne et ouvrir Claude</button>
-          <small>Dans Claude : colle la consigne, ajoute la photo de ton assiette, envoie.</small></li>
-        <li><span>Copie la réponse de Claude, puis :</span>
+        <li><label class="${photoFile ? 'secondary' : 'primary'} ph-shot"><input type="file" id="ph-file" accept="image/*" capture="environment" hidden>
+            ${photoFile ? 'Reprendre la photo' : 'Prendre la photo'}</label>
+          ${photoUrl ? `<img class="ph-thumb" src="${photoUrl}" alt="Photo de l'assiette">` : ''}</li>
+        <li><button type="button" class="primary small" data-ph-send ${photoFile ? '' : 'disabled'}>Envoyer à Claude</button>
+          <small>Dans le menu de partage, choisis <b>Claude</b> : la photo et la demande sont déjà dedans, il ne reste qu'à envoyer.
+            <button type="button" class="link-btn ph-alt" data-ph-copy>Sans photo ici ? Copier seulement la demande et ouvrir Claude</button></small></li>
+        <li><span>Quand Claude a répondu : appui long sur sa réponse → Copier, puis :</span>
           <div class="ph-paste"><button type="button" class="secondary" data-ph-paste>Coller la réponse</button></div>
           <textarea id="ph-in" rows="3" placeholder="…ou colle-la ici à la main"></textarea>
           <button type="button" class="chip-btn" data-ph-read>Lire la réponse</button></li>
@@ -299,6 +325,21 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
       window.open(CLAUDE_URL, '_blank', 'noopener');
       return;
     }
+    if (e.target.closest('[data-ph-send]')) {
+      if (!photoFile) return;
+      const text = buildPrompt();
+      // La demande est aussi copiée : si l'appli Claude ne reprend que la photo, il suffit de la coller
+      navigator.clipboard?.writeText(text).catch(() => {});
+      const data = { files: [photoFile], text };
+      if (navigator.canShare && navigator.canShare(data)) {
+        navigator.share(data).then(
+          () => renderPhoto('Envoyé ! Dans Claude, appuie sur Envoyer. Si la demande n\'apparaît pas, colle-la (elle est copiée).'),
+          err => { if (err.name !== 'AbortError') renderPhoto(`Le partage n'a pas abouti (${err.name}). Essaie « Copier seulement la demande ».`); });
+      } else {
+        renderPhoto('Ce navigateur ne sait pas partager une photo : utilise « Copier seulement la demande et ouvrir Claude », puis ajoute la photo dans Claude.');
+      }
+      return;
+    }
     if (e.target.closest('[data-ph-paste]')) {
       navigator.clipboard?.readText().then(readAnswer, () => renderPhoto('Ton téléphone a refusé de coller : colle la réponse dans la case ci-dessous.'));
       return;
@@ -320,6 +361,9 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
       const upTo = Math.min(goal, (i + 1) * GLASS);
       setDrunk(drunk(p.id) === upTo ? i * GLASS : upTo);
     }
+  });
+  page.addEventListener('change', e => {
+    if (e.target.id === 'ph-file' && e.target.files?.[0]) preparePhoto(e.target.files[0]);
   });
   page.addEventListener('submit', e => {
     if (e.target.id !== 'weight-form') return;

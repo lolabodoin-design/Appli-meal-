@@ -163,6 +163,6 @@ Sans réponse, le menu est calculé exactement comme d'habitude.
 - **Poids** : une pesée par jour au plus, courbe des 12 dernières, écart depuis la première ;
   le profil prend le nouveau poids et les objectifs caloriques sont recalculés.
 - Un suivi par personne ; par défaut, celle des rappels d'eau de l'appareil.
-- **Robot photo (gratuit, via l'appli Claude)** : choix du repas → « Copier la consigne et ouvrir Claude » (consigne avec
-  le repas prévu et un format JSON imposé) → photo envoyée dans Claude → « Coller la réponse » : aliments, calories, macros
+- **Robot photo (gratuit, via l'appli Claude)** : choix du repas → photo prise dans l'appli → « Envoyer à Claude » (partage iPhone :
+  photo + demande avec le repas prévu et un format JSON imposé ; demande aussi copiée) → envoi dans Claude → « Coller la réponse » : aliments, calories, macros
   comparés au repas prévu, conseil, historique du jour. Version automatique possible via l'API Claude (payante, clé côté serveur).
