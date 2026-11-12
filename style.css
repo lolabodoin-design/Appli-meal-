@@ -537,7 +537,7 @@ kbd { background: var(--surface); border: 1px solid var(--border); border-radius
 .rayon h3 { font-size: 1.15rem; margin-bottom: 6px; }
 .rayon .rayon-note { font-family: var(--font-body); color: var(--muted); font-size: .78rem; }
 .item {
-  display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center;
   padding: 12px 4px; border-bottom: 1px solid var(--border);
 }
 .item-main { flex-direction: row; align-items: center; gap: 12px; color: var(--text); cursor: pointer; font-size: .92rem; }
@@ -557,9 +557,9 @@ kbd { background: var(--surface); border: 1px solid var(--border); border-radius
   border: 1px solid var(--accent); padding: 5px 13px; border-radius: 999px;
 }
 .drive-link:hover { background: var(--accent); color: var(--surface); }
-@media (max-width: 560px) { .item { grid-template-columns: 1fr; } .item-actions { justify-content: flex-start; } }
+@media (max-width: 560px) { .item { grid-template-columns: minmax(0, 1fr); } .item-actions { justify-content: flex-start; } }
 
-.off-panel { grid-column: 1 / -1; padding-top: 6px; }
+.off-panel { grid-column: 1 / -1; padding-top: 6px; min-width: 0; max-width: 100%; }
 .off-panel .hint { margin: 0 0 8px; }
 .products { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
 .product {
@@ -568,7 +568,7 @@ kbd { background: var(--surface); border: 1px solid var(--border); border-radius
 }
 /* Téléphone : les produits défilent en carrousel horizontal */
 @media (max-width: 640px) {
-  .products { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 82%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .products { max-width: 100%; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 82%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   .products::-webkit-scrollbar { display: none; }
   .product { scroll-snap-align: start; }
   .product .chip-btn, .product button { min-height: 40px; }
@@ -611,3 +611,7 @@ kbd { background: var(--surface); border: 1px solid var(--border); border-radius
   .day-preview { display: none; }
   .off-panel { display: none; }
 }
+
+/* Sécurité : la page ne doit jamais défiler sur le côté */
+html, body { overflow-x: hidden; }
+@supports (overflow: clip) { html, body { overflow-x: clip; } }
