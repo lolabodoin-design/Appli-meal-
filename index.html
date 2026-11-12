@@ -19,14 +19,15 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Écran de lancement : le logo se dessine sur fond beige, puis s'efface -->
+  <div id="splash" class="splash" aria-hidden="true">
+    <svg class="splash-logo" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" pathLength="1"><path d="M33 33 C32.5 25 36 19 44 15.5 C44.5 23.5 40.5 29.5 33 33 Z" pathLength="1"/><path d="M34.5 30.5 L41.5 19.5" pathLength="1"/><path d="M30.5 33 C30 28 27 24.5 21.5 23.5 C21.5 28.5 24.5 32 30.5 33 Z" pathLength="1"/><path d="M8 33 H56" pathLength="1"/><path d="M10 33 C10.5 44.5 19.5 52 32 52 C44.5 52 53.5 44.5 54 33" pathLength="1"/><path d="M25 52 L26.5 56 H37.5 L39 52" pathLength="1"/></svg>
+  </div>
+
   <header class="appbar">
     <div class="wrap appbar-inner">
-      <div class="brand">
-        <span class="logo" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M33 33 C32.5 25 36 19 44 15.5 C44.5 23.5 40.5 29.5 33 33 Z"/><path d="M34.5 30.5 L41.5 19.5"/><path d="M30.5 33 C30 28 27 24.5 21.5 23.5 C21.5 28.5 24.5 32 30.5 33 Z"/><path d="M8 33 H56"/><path d="M10 33 C10.5 44.5 19.5 52 32 52 C44.5 52 53.5 44.5 54 33"/><path d="M25 52 L26.5 56 H37.5 L39 52"/></svg></span>
-        <div>
-          <h1>Le menu de la semaine</h1>
-        </div>
-      </div>
+      <span class="logo" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M33 33 C32.5 25 36 19 44 15.5 C44.5 23.5 40.5 29.5 33 33 Z"/><path d="M34.5 30.5 L41.5 19.5"/><path d="M30.5 33 C30 28 27 24.5 21.5 23.5 C21.5 28.5 24.5 32 30.5 33 Z"/><path d="M8 33 H56"/><path d="M10 33 C10.5 44.5 19.5 52 32 52 C44.5 52 53.5 44.5 54 33"/><path d="M25 52 L26.5 56 H37.5 L39 52"/></svg></span>
+      <h1 class="sr-only">Le menu de la semaine</h1>
     </div>
   </header>
 
@@ -190,6 +191,17 @@
     <button type="button" id="btn-update">Mettre à jour</button>
   </div>
 
+  <script>
+    (function () {
+      var splash = document.getElementById('splash');
+      var seen = false;
+      try { seen = sessionStorage.getItem('splash') === '1'; sessionStorage.setItem('splash', '1'); } catch (e) { /* ignore */ }
+      if (seen) { splash.remove(); return; }
+      function hide() { splash.classList.add('hide'); setTimeout(function () { splash.remove(); }, 700); }
+      splash.addEventListener('click', hide);
+      setTimeout(hide, Math.max(0, 4000 - performance.now()));
+    })();
+  </script>
   <script src="data.js"></script>
   <script src="drive-stock.js"></script>
   <script src="app.js"></script>
