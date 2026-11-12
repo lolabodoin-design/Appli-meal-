@@ -1982,6 +1982,15 @@ function bindWaterEvents() {
 //  Appli installable (PWA) : hors connexion + mises à jour
 // ============================================================
 let updateRequested = false;
+let manualUpdate = null;
+
+// Numéro de version affiché dans Réglages (lu dans le nom du cache du service worker)
+async function showVersion() {
+  try {
+    const key = (await caches.keys()).find(k => k.startsWith('menu-proteine-'));
+    $('#app-version').textContent = key ? `Version ${key.replace('menu-proteine-v', '')}` : '';
+  } catch { /* ignore */ }
+}
 
 function registerServiceWorker() {
   // Le service worker ne fonctionne qu'en https (ou sur localhost), pas en ouvrant le fichier directement
@@ -2000,14 +2009,20 @@ function registerServiceWorker() {
         worker.postMessage('skipWaiting');
       };
     };
-    if (reg.waiting && navigator.serviceWorker.controller) offerUpdate(reg.waiting);
-    reg.addEventListener('updatefound', () => {
-      const worker = reg.installing;
-      worker.addEventListener('statechange', () => {
-        // Une nouvelle version est prête et une ancienne tourne encore : on propose la mise à jour
-        if (worker.state === 'installed' && navigator.serviceWorker.controller) offerUpdate(worker);
-      });
+    // Une nouvelle version est prête et une ancienne tourne encore : on propose la mise à jour
+    const track = worker => worker?.addEventListener('statechange', () => {
+      if (worker.state === 'installed' && navigator.serviceWorker.controller) offerUpdate(worker);
     });
+    if (reg.waiting && navigator.serviceWorker.controller) offerUpdate(reg.waiting);
+    track(reg.installing); // téléchargement déjà en cours à l'ouverture de l'appli
+    reg.addEventListener('updatefound', () => track(reg.installing));
+    manualUpdate = async () => {
+      $('#update-status').textContent = 'Vérification…';
+      try { await reg.update(); } catch { /* hors connexion */ }
+      setTimeout(() => {
+        $('#update-status').textContent = reg.waiting || reg.installing ? 'Nouvelle version trouvée : touchez « Mettre à jour » en bas.' : 'Vous avez la dernière version.';
+      }, 1500);
+    };
   }).catch(() => { /* pas de mode hors connexion, l'appli fonctionne quand même */ });
 
   // On ne recharge que si l'utilisateur a demandé la mise à jour
@@ -2026,4 +2041,6 @@ render();
 $('#profil').open = !state.people.every(p => p.saved);
 try { const page = sessionStorage.getItem('page'); if (page && $(`#page-${page}`)) showPage(page); } catch { /* ignore */ }
 registerServiceWorker();
+showVersion();
+$('#btn-check-update').addEventListener('click', () => (manualUpdate ? manualUpdate() : ($('#update-status').textContent = "Les mises à jour se vérifient depuis l'appli en ligne.")));
 renderWater();

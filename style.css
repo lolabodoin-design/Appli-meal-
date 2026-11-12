@@ -492,6 +492,8 @@ kbd { background: var(--surface); border: 1px solid var(--border); border-radius
 .ns-a { background: #038141; } .ns-b { background: #85bb2f; } .ns-c { background: #e6b800; }
 .ns-d { background: #ee8100; } .ns-e { background: #e63e11; }
 
+.app-update { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 24px; font-size: .8rem; color: var(--muted); }
+.app-update .hint { margin: 0; width: 100%; text-align: center; }
 .footer { color: var(--muted); font-size: .78rem; text-align: center; padding: 40px 16px calc(40px + env(safe-area-inset-bottom)); }
 
 /* ---------- Appli installée (PWA) */
