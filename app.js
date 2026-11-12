@@ -1843,13 +1843,50 @@ function bindEvents() {
 
   // Ouvre le Drive en emportant la liste dans l'adresse (#mp=…) : le favori la lit tout seul.
   // Copiée aussi dans le presse-papiers, au cas où (ex. connexion au compte qui ferait perdre l'adresse).
-  $('#btn-open-drive').addEventListener('click', async () => {
+  // Guide en cartes : affiché automatiquement la première fois, puis via « Comment ça marche ? »
+  let guideSeen = false;
+  try { guideSeen = localStorage.getItem('guide-panier') === '1'; } catch { /* ignore */ }
+  const carousel = $('#guide-carousel');
+  const guideIndex = () => Math.round(carousel.scrollLeft / carousel.clientWidth);
+  const updateGuide = () => {
+    const i = guideIndex(), n = carousel.children.length;
+    document.querySelectorAll('.gdot').forEach((dot, k) => dot.classList.toggle('on', k === i));
+    $('#guide-prev').disabled = i === 0;
+    $('#guide-next').hidden = i === n - 1;
+  };
+  const goGuide = i => carousel.scrollTo({ left: i * carousel.clientWidth, behavior: 'smooth' });
+  const openGuide = () => {
+    $('#guide-sheet').hidden = false;
+    document.body.classList.add('sheet-open');
+    carousel.scrollLeft = 0;
+    updateGuide();
+  };
+  const closeGuide = () => { $('#guide-sheet').hidden = true; document.body.classList.remove('sheet-open'); };
+  carousel.addEventListener('scroll', () => requestAnimationFrame(updateGuide));
+  $('#guide-next').addEventListener('click', () => goGuide(guideIndex() + 1));
+  $('#guide-prev').addEventListener('click', () => goGuide(guideIndex() - 1));
+  $('#guide-dots').addEventListener('click', e => { const d = e.target.closest('.gdot'); if (d) goGuide(Number(d.dataset.i)); });
+  $('#btn-guide').addEventListener('click', openGuide);
+  $('#btn-guide-close').addEventListener('click', closeGuide);
+  $('#guide-sheet').addEventListener('click', e => { if (e.target.id === 'guide-sheet') closeGuide(); });
+  $('#btn-guide-go').addEventListener('click', () => {
+    try { localStorage.setItem('guide-panier', '1'); } catch { /* ignore */ }
+    guideSeen = true;
+    closeGuide();
+    openDriveWithList();
+  });
+
+  $('#btn-open-drive').addEventListener('click', () => (guideSeen ? openDriveWithList() : openGuide()));
+
+  function openDriveWithList() {
     const list = JSON.stringify(cartExport());
-    try { await navigator.clipboard.writeText(list); } catch { /* pas grave */ }
     const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(list))));
     const base = driveStoreBase() || DEFAULT_DRIVE_URL;
+    // On ouvre d'abord (Safari bloque les fenêtres qui ne suivent pas immédiatement un clic)…
     window.open(`${base}/recherche.aspx?TexteRecherche=#mp=${encoded}`, '_blank', 'noopener');
-  });
+    // … puis on copie la liste en secours
+    navigator.clipboard?.writeText(list).catch(() => { /* pas grave */ });
+  }
 
   $('#btn-copy-drive').addEventListener('click', async e => {
     try {

@@ -70,11 +70,7 @@
             <div class="desktop-only bulk">
               <button type="button" id="btn-open-drive" class="primary">Remplir mon panier Leclerc</button>
               <p class="hint">Le site Leclerc s'ouvre : cliquez sur <b>Stock Drive</b> dans votre barre de favoris, puis sur <b>Tout mettre dans le panier</b>. Vous validez ensuite la commande vous-même.</p>
-              <details class="mini-fold" id="first-time">
-                <summary>Première fois ? Installez le bouton « Stock Drive »</summary>
-                <p>Glissez ce bouton dans votre barre de favoris : <a id="bm-link" class="bookmarklet" href="#">Stock Drive</a>
-                  <small>(barre de favoris invisible ? <kbd>⌘ + Maj + B</kbd>)</small></p>
-              </details>
+              <p class="guide-link"><button type="button" class="link-btn" id="btn-guide">Comment ça marche ?</button></p>
               <details class="mini-fold">
                 <summary>Options avancées</summary>
                 <p class="hint">Prix réels : dans la fenêtre Leclerc, cliquez sur « Copier le résultat pour l'appli », puis collez-le ici. Les ruptures pourront alors être écartées du menu.</p>
@@ -181,6 +177,50 @@
       <span>Réglages</span>
     </button>
   </nav>
+
+  <!-- ============ Guide « Remplir mon panier » en cartes ============ -->
+  <div id="guide-sheet" class="sheet" hidden>
+    <div class="sheet-panel guide-panel" role="dialog" aria-modal="true" aria-label="Comment remplir votre panier Leclerc">
+      <div class="sheet-head">
+        <h2>Remplir votre panier en 1 clic</h2>
+        <button type="button" class="sheet-close" id="btn-guide-close" aria-label="Fermer">✕</button>
+      </div>
+      <div class="carousel" id="guide-carousel">
+          <section class="guide-card" aria-label="Étape 1 sur 4">
+            <div class="guide-ill"><svg viewBox="0 0 240 150" aria-hidden="true"><rect x="20" y="18" width="200" height="118" rx="10" class="ill-surface"/><path d="M20 40h200" class="ill-line"/><circle cx="34" cy="29" r="3" class="ill-dot"/><circle cx="45" cy="29" r="3" class="ill-dot"/><circle cx="56" cy="29" r="3" class="ill-dot"/><path d="M20 58h200" class="ill-line"/><rect x="30" y="44" width="34" height="10" rx="5" class="ill-soft"/><rect x="70" y="44" width="34" height="10" rx="5" class="ill-soft"/><rect x="112" y="43" width="58" height="12" rx="6" class="ill-accent ill-ghost"/><rect x="96" y="92" width="74" height="22" rx="11" class="ill-accent"/><text x="133" y="107" text-anchor="middle" font-family="DM Sans, sans-serif" class="ill-text-light">Stock Drive</text><path d="M150 90 C150 74 146 64 141 58" class="ill-arrow"/><path d="M136 62 L141 57 L145 63" class="ill-arrow"/></svg></div>
+            <span class="guide-step">Étape 1 / 4</span>
+            <h3>Installez le bouton, une seule fois</h3>
+            <p>Glissez ce bouton dans la barre de favoris de votre navigateur. C'est tout.</p>
+            <p class="card-action"><a id="bm-link" class="bookmarklet" href="#">Stock Drive</a></p>
+            <p class="hint">Barre de favoris invisible ? <kbd>⌘ + Maj + B</kbd> (ou <kbd>Ctrl + Maj + B</kbd> sur PC)</p>
+          </section>
+          <section class="guide-card" aria-label="Étape 2 sur 4">
+            <div class="guide-ill"><svg viewBox="0 0 240 150" aria-hidden="true"><rect x="22" y="30" width="78" height="96" rx="12" class="ill-surface"/><rect x="34" y="46" width="54" height="6" rx="3" class="ill-soft"/><rect x="34" y="58" width="40" height="6" rx="3" class="ill-soft"/><rect x="32" y="96" width="58" height="16" rx="8" class="ill-accent"/><path d="M110 78 H140" class="ill-arrow"/><path d="M134 72 L141 78 L134 84" class="ill-arrow"/><rect x="150" y="30" width="70" height="96" rx="12" class="ill-surface"/><rect x="150" y="30" width="70" height="22" rx="12" class="ill-blue"/><text x="185" y="45" text-anchor="middle" font-family="DM Sans, sans-serif" class="ill-text-light">Leclerc</text><rect x="160" y="64" width="50" height="6" rx="3" class="ill-soft"/><rect x="160" y="76" width="36" height="6" rx="3" class="ill-soft"/><rect x="160" y="88" width="44" height="6" rx="3" class="ill-soft"/></svg></div>
+            <span class="guide-step">Étape 2 / 4</span>
+            <h3>Ouvrez Leclerc avec votre liste</h3>
+            <p>Dans l'onglet Courses, touchez « Remplir mon panier Leclerc » : votre magasin s'ouvre, votre liste est prête.</p>
+          </section>
+          <section class="guide-card" aria-label="Étape 3 sur 4">
+            <div class="guide-ill"><svg viewBox="0 0 240 150" aria-hidden="true"><rect x="20" y="18" width="200" height="118" rx="10" class="ill-surface"/><path d="M20 40h200" class="ill-line"/><circle cx="34" cy="29" r="3" class="ill-dot"/><circle cx="45" cy="29" r="3" class="ill-dot"/><circle cx="56" cy="29" r="3" class="ill-dot"/><path d="M20 58h200" class="ill-line"/><rect x="30" y="44" width="34" height="10" rx="5" class="ill-soft"/><rect x="70" y="43" width="58" height="12" rx="6" class="ill-accent"/><text x="99" y="52" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="7" class="ill-text-light">Stock Drive</text><path d="M108 60 L108 80 L113 75 L118 85 L121 83 L116 74 L123 74 Z" class="ill-cursor"/><rect x="34" y="96" width="172" height="8" rx="4" class="ill-blue-soft"/><rect x="34" y="112" width="120" height="8" rx="4" class="ill-blue-soft"/></svg></div>
+            <span class="guide-step">Étape 3 / 4</span>
+            <h3>Cliquez sur « Stock Drive »</h3>
+            <p>Sur le site Leclerc, cliquez sur le bouton installé dans vos favoris. Une petite fenêtre s'ouvre.</p>
+          </section>
+          <section class="guide-card" aria-label="Étape 4 sur 4">
+            <div class="guide-ill"><svg viewBox="0 0 240 150" aria-hidden="true"><rect x="40" y="16" width="160" height="118" rx="14" class="ill-surface"/><rect x="56" y="32" width="70" height="8" rx="4" class="ill-soft"/><text x="56" y="62" font-family="DM Sans, sans-serif" font-size="13" class="ill-text">56 produits</text><rect x="56" y="76" width="128" height="22" rx="11" class="ill-accent"/><text x="120" y="91" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="8" class="ill-text-light">Tout mettre dans le panier</text><circle cx="120" cy="116" r="9" class="ill-check-bg"/><path d="M115 116 L119 120 L126 112" class="ill-check"/></svg></div>
+            <span class="guide-step">Étape 4 / 4</span>
+            <h3>Tout mettre dans le panier</h3>
+            <p>Cliquez sur « Tout mettre dans le panier ». Vérifiez votre panier Leclerc, puis validez la commande vous-même : rien n'est payé automatiquement.</p>
+            <p class="card-action"><button type="button" class="primary small" id="btn-guide-go">C'est parti</button></p>
+          </section>
+      </div>
+      <div class="guide-nav">
+        <button type="button" class="ghost" id="guide-prev">← Retour</button>
+        <div class="dots" id="guide-dots"><span class="gdot" data-i="0"></span><span class="gdot" data-i="1"></span><span class="gdot" data-i="2"></span><span class="gdot" data-i="3"></span></div>
+        <button type="button" class="secondary" id="guide-next">Suivant →</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ============ Quiz « Nos envies », en fenêtre ============ -->
   <div id="quiz-sheet" class="sheet" hidden>

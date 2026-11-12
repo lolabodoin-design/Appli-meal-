@@ -245,6 +245,41 @@ body.sheet-open { overflow: hidden; }
 @keyframes sheet-up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (min-width: 800px) { .sheet { align-items: center; } .sheet-panel { border-radius: 24px; } }
 
+/* ---------- Guide en cartes (à faire défiler) */
+.guide-link { margin: 6px 0 0; }
+.guide-link .link-btn { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; font-size: .84rem; }
+.guide-panel { padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+.carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; gap: 14px; margin: 0 -20px; padding: 4px 20px 8px; scrollbar-width: none; }
+.carousel::-webkit-scrollbar { display: none; }
+.guide-card { flex: 0 0 100%; scroll-snap-align: center; text-align: center; padding: 6px 8px 4px; }
+.guide-ill { background: var(--surface-2); border-radius: 18px; padding: 14px; margin-bottom: 14px; }
+.guide-ill svg { width: 100%; max-width: 320px; height: auto; display: block; margin: 0 auto; }
+.guide-step { font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.guide-card h3 { font-size: 1.35rem; margin: 6px 0 6px; color: var(--accent-strong); }
+.guide-card p { margin: 0 auto 8px; max-width: 420px; font-size: .92rem; color: var(--text); }
+.guide-card .hint { font-size: .78rem; }
+.card-action { margin-top: 12px !important; }
+.guide-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+.guide-nav button:disabled { opacity: .3; cursor: default; }
+.dots { display: flex; gap: 6px; }
+.gdot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); transition: background .2s, width .2s; }
+.gdot.on { background: var(--accent); width: 18px; border-radius: 99px; }
+/* Illustrations au trait, aux couleurs de l'appli */
+.ill-surface { fill: var(--surface); stroke: var(--accent); stroke-width: 1.2; }
+.ill-line { stroke: var(--border); stroke-width: 1.2; }
+.ill-dot { fill: var(--border); }
+.ill-soft { fill: var(--surface-2); }
+.ill-accent { fill: var(--accent); }
+.ill-ghost { opacity: .25; stroke: var(--accent); stroke-dasharray: 3 3; fill: none; }
+.ill-blue { fill: #1f63b0; }
+.ill-blue-soft { fill: #dfe9f6; }
+.ill-arrow { fill: none; stroke: var(--sage); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ill-cursor { fill: var(--text); stroke: var(--surface); stroke-width: 1; }
+.ill-text { fill: var(--text); }
+.ill-text-light { fill: var(--surface); font-size: 9px; }
+.ill-check-bg { fill: var(--sage); }
+.ill-check { fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
 /* ---------- Résumé de la semaine */
 .summary { margin-bottom: 20px; }
 .summary h3 { font-size: 1.2rem; margin-bottom: 12px; }
