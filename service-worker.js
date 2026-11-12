@@ -5,7 +5,7 @@
    - Sans internet (ou réseau trop lent), on sert la copie de secours.
    - VERSION : à changer à chaque mise à jour, pour renouveler la copie de secours.
    ============================================================ */
-const VERSION = 'v3.19.1';
+const VERSION = 'v3.20.0';
 const CACHE = `menu-proteine-${VERSION}`;
 
 const FILES = [

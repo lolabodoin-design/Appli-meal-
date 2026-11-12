@@ -700,12 +700,32 @@ function canPlan(pools) {
   return pools.plat.length > 0;
 }
 
+// Restes probables des courses de la semaine qui se termine : paquet acheté − quantité utilisée.
+// Seulement pour ce qui a été coché (= acheté / mis au panier) : proposés ensuite dans « Anti-gaspi ».
+function boughtGrams(ing, g) {
+  if (ing.piece) return Math.max(1, Math.ceil(g / ing.piece - 0.15)) * ing.piece;
+  if (ing.pack) return Math.ceil(g / ing.pack) * ing.pack;
+  return g;
+}
+function rememberLeftovers() {
+  if (!state.plan || !Object.keys(state.checked || {}).length) return;
+  const items = shoppingList()
+    .filter(({ id, ing }) => state.checked[id] && !state.fridge?.[id] && !ing.placard && ing.rayon !== 'Placard')
+    .map(({ id, ing, g }) => ({ id, g: Math.round(boughtGrams(ing, g) - g) }))
+    .filter(({ id, g }) => {
+      const ing = INGREDIENTS[id];
+      return ing.piece ? g >= ing.piece * 0.8 : g >= Math.max(30, (ing.pack || 0) * 0.15);
+    });
+  if (items.length) state.leftovers = { date: new Date().toISOString(), items };
+}
+
 // generateWeek() : menu classique · generateWeek({ antiGaspi: true }) : utilise d'abord le frigo
 // (attention : en clic direct, le premier argument est l'événement → menu classique)
 function generateWeek(opts) {
   const pools = recipePools();
   if (!canPlan(pools)) return;
   state.antiGaspi = opts?.antiGaspi === true && Object.keys(state.fridge || {}).length > 0;
+  rememberLeftovers();
   const usage = {};
   const families = { viande: 0, poisson: 0, vegetal: 0 };
   fridgeUsed = new Set();

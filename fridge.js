@@ -124,7 +124,32 @@
     }
   }
 
-  function render() { renderSummary(); renderMode(); if (!el('fridge-editor').hidden) renderEditor(); }
+  // ---------- Restes probables des courses précédentes (proposés, jamais ajoutés d'office)
+  function fmtLeft(id, g) {
+    const ing = INGREDIENTS[id];
+    if (ing.piece) { const n = Math.round(g / ing.piece); return `${n} ${n > 1 ? ing.units : ing.unit}`; }
+    return `~${g >= 100 ? Math.round(g / 10) * 10 : g} g ${shortName(ing).toLowerCase()}`;
+  }
+  function renderLeftovers() {
+    const box = el('leftovers');
+    const f = fr();
+    const items = (state.leftovers?.items || []).filter(({ id }) => INGREDIENTS[id]);
+    box.hidden = !items.length;
+    if (!items.length) return;
+    const pending = items.filter(({ id }) => !f[id]);
+    box.innerHTML = `
+      <p class="lo-title"><b>Restes probables de tes dernières courses</b><br>
+        <small>Paquets entiers achetés − quantités utilisées. Touche ce qu'il te reste vraiment.</small></p>
+      <div class="fridge-chips">${items.map(({ id, g }) => `
+        <button type="button" class="fridge-chip ${f[id] === 2 ? 'urgent' : f[id] ? 'on' : ''}" data-left="${id}" aria-pressed="${!!f[id]}">
+          ${f[id] ? '<span class="fc-dot" aria-hidden="true">✓</span>' : '<span class="lo-plus" aria-hidden="true">+</span>'}${esc(fmtLeft(id, g))}</button>`).join('')}</div>
+      <div class="lo-actions">
+        ${pending.length ? '<button type="button" class="chip-btn" data-left-all>Tout ajouter au frigo</button>' : ''}
+        <button type="button" class="link-btn" data-left-dismiss>Masquer</button>
+      </div>`;
+  }
+
+  function render() { renderSummary(); renderLeftovers(); renderMode(); if (!el('fridge-editor').hidden) renderEditor(); }
 
   // ---------- Événements
   el('btn-fridge-edit').addEventListener('click', () => {
@@ -151,6 +176,19 @@
       renderEditor(); renderSummary(); renderMode();
       return;
     }
+    // Les produits frais restants sont proposés « à finir vite »
+    const left = e.target.closest('[data-left]');
+    if (left) {
+      const f = fr(), id = left.dataset.left;
+      if (f[id]) delete f[id]; else f[id] = INGREDIENTS[id].fresh ? 2 : 1;
+      saveState(); render(); return;
+    }
+    if (e.target.closest('[data-left-all]')) {
+      const f = fr();
+      for (const { id } of state.leftovers.items) if (!f[id] && INGREDIENTS[id]) f[id] = INGREDIENTS[id].fresh ? 2 : 1;
+      saveState(); render(); return;
+    }
+    if (e.target.closest('[data-left-dismiss]')) { state.leftovers = null; saveState(); render(); return; }
     const seg = e.target.closest('.seg-btn');
     if (seg) { mode = seg.dataset.mode; renderMode(); return; }
     if (e.target.closest('#btn-fridge-go')) {
@@ -163,8 +201,7 @@
   el('btn-fridge-clear').addEventListener('click', () => { state.fridge = {}; saveState(); render(); });
 
   // Mise à jour quand on arrive sur la page (régimes, avis… ont pu changer)
-  el('btn-antigaspi').addEventListener('click', () => { showPage('frigo'); render(); });
-  el('btn-frigo-back').addEventListener('click', () => showPage('semaine'));
+  document.querySelectorAll('.nav-item[data-page="frigo"]').forEach(b => b.addEventListener('click', render));
   if (!Object.keys(fr()).length) { el('fridge-editor').hidden = false; el('btn-fridge-edit').hidden = true; }
   render();
 })();
