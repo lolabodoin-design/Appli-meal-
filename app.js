@@ -2277,12 +2277,19 @@ let updateRequested = false;
 let manualUpdate = null;
 
 // Numéro de version affiché dans Réglages (lu dans le nom du cache du service worker)
+// Numéro de version : lu dans le service worker publié (la copie de secours peut être en retard)
 async function showVersion() {
+  let v = '';
   try {
-    const key = (await caches.keys()).find(k => k.startsWith('menu-proteine-'));
-    $('#app-version').textContent = key ? `Version ${key.replace('menu-proteine-v', '')}` : '';
-  } catch { /* ignore */ }
+    const txt = await (await fetch('service-worker.js', { cache: 'no-store' })).text();
+    v = (txt.match(/VERSION = 'v([\d.]+)'/) || [])[1] || '';
+  } catch { /* hors connexion */ }
+  if (!v) {
+    try { v = ((await caches.keys()).find(k => k.startsWith('menu-proteine-')) || '').replace('menu-proteine-v', ''); } catch { /* ignore */ }
+  }
+  $('#app-version').textContent = v ? `Version ${v}` : '';
 }
+let swError = '';
 
 function registerServiceWorker() {
   // Le service worker ne fonctionne qu'en https (ou sur localhost), pas en ouvrant le fichier directement
@@ -2318,7 +2325,7 @@ function registerServiceWorker() {
         $('#update-status').textContent = reg.waiting || reg.installing ? 'Nouvelle version trouvée : installation…' : 'Vous avez la dernière version.';
       }, 1500);
     };
-  }).catch(() => { /* pas de mode hors connexion, l'appli fonctionne quand même */ });
+  }).catch(e => { swError = e?.name || 'erreur'; /* pas de mode hors connexion, l'appli fonctionne quand même */ });
 
   // Une nouvelle version vient de prendre la main : on recharge pour l'afficher
   // (pas lors de la toute première installation, où il n'y avait pas d'ancienne version)
@@ -2352,8 +2359,10 @@ $('#btn-check-update').addEventListener('click', () => {
   // Page ouverte depuis un fichier de l'ordinateur, ou vérification impossible : on guide vers l'appli en ligne
   $('#update-status').innerHTML = location.protocol === 'file:'
     ? `Tu regardes une copie enregistrée sur cet appareil. Ouvre l'appli en ligne pour avoir la dernière version : <a href="${APP_URL}">${APP_URL}</a>`
-    : `Vérification impossible ici. <button type="button" class="link-btn" id="btn-hard-reload">Recharger l'appli</button> ou ouvre <a href="${APP_URL}">l'appli en ligne</a>.`;
+    : `Vérification impossible ici${swError ? ` (${esc(swError)})` : ''}. <button type="button" class="chip-btn" id="btn-hard-reload">Réinitialiser et recharger</button>`;
+  // Remise à zéro de la copie de secours (les données : profils, menu, recettes aimées… sont conservées)
   $('#btn-hard-reload')?.addEventListener('click', async () => {
+    try { for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister(); } catch { /* ignore */ }
     try { for (const k of await caches.keys()) await caches.delete(k); } catch { /* ignore */ }
     location.reload();
   });
