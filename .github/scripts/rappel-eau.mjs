@@ -1,5 +1,5 @@
 // ============================================================
-//  Rappels pour boire de l'eau : envoi des notifications push
+//  Rappels pour boire de l'eau (+ rappel du quiz le dimanche à 19 h) : notifications push
 //  Lancé par GitHub Actions toutes les heures (.github/workflows/rappels-eau.yml).
 //
 //  Secrets GitHub nécessaires (Settings → Secrets and variables → Actions) :
@@ -35,8 +35,13 @@ const MESSAGES = {
   21: "Dernier rappel de la journée : un petit verre d'eau et bonne soirée 🌙",
 };
 
-// Heure actuelle à Paris (gère automatiquement l'heure d'été / d'hiver)
+// Heure et jour actuels à Paris (gère automatiquement l'heure d'été / d'hiver)
 const parisHour = Number(new Intl.DateTimeFormat('fr-FR', { hour: 'numeric', hour12: false, timeZone: 'Europe/Paris' }).format(new Date()));
+const parisDay = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', timeZone: 'Europe/Paris' }).format(new Date());
+
+// Dimanche 19 h : rappel pour préparer le menu de la semaine suivante (quiz « Nos envies »)
+const SUNDAY_QUIZ_HOUR = 19;
+const sundayQuiz = parisDay === 'dimanche' && parisHour === SUNDAY_QUIZ_HOUR;
 const manual = process.env.GITHUB_EVENT_NAME === 'workflow_dispatch'; // bouton « Run workflow » : envoi de test
 
 const privateKey = process.env.VAPID_PRIVATE_KEY;
@@ -65,16 +70,21 @@ let sent = 0;
 for (const entry of entries) {
   const { subscription, rythme = '4x', prenom = '' } = entry;
   const hours = SCHEDULES[rythme] || SCHEDULES['4x'];
-  if (!manual && !hours.includes(parisHour)) continue;
+  const water = manual || hours.includes(parisHour);
+  if (!water && !sundayQuiz) continue;
 
-  const body = manual
-    ? '✅ Test réussi : les rappels d\'eau fonctionnent !'
-    : MESSAGES[parisHour] || "Pense à boire un verre d'eau 💧";
-  const payload = JSON.stringify({
-    title: prenom ? `💧 ${prenom}, un verre d'eau ?` : "💧 Un verre d'eau ?",
-    body,
-    url: APP_URL,
-  });
+  // Le dimanche à 19 h, le rappel du quiz remplace le rappel d'eau de cette heure-là
+  const payload = sundayQuiz && !manual
+    ? JSON.stringify({
+      title: prenom ? `${prenom}, la semaine prochaine se prépare` : 'La semaine prochaine se prépare',
+      body: 'Réponds au quiz « Nos envies » pour générer le menu de la semaine.',
+      url: `${APP_URL}?quiz=1`,
+    })
+    : JSON.stringify({
+      title: prenom ? `💧 ${prenom}, un verre d'eau ?` : "💧 Un verre d'eau ?",
+      body: manual ? '✅ Test réussi : les rappels d\'eau fonctionnent !' : MESSAGES[parisHour] || "Pense à boire un verre d'eau 💧",
+      url: APP_URL,
+    });
   try {
     await webpush.sendNotification(subscription, payload, { TTL: 3600, urgency: 'normal' });
     sent++;
@@ -84,4 +94,4 @@ for (const entry of entries) {
     console.error(`Échec pour ${prenom || 'un téléphone'} : ${err.statusCode || ''} ${err.body || err.message}`);
   }
 }
-console.log(`${sent} notification(s) envoyée(s) — il est ${parisHour} h à Paris.`);
+console.log(`${sent} notification(s) envoyée(s) — ${parisDay}, ${parisHour} h à Paris${sundayQuiz ? ' (rappel du quiz)' : ''}.`);

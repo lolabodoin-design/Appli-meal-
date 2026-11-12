@@ -5,7 +5,7 @@
    - Sans internet (ou réseau trop lent), on sert la copie de secours.
    - VERSION : à changer à chaque mise à jour, pour renouveler la copie de secours.
    ============================================================ */
-const VERSION = 'v3.3.0';
+const VERSION = 'v3.4.0';
 const CACHE = `menu-proteine-${VERSION}`;
 
 const FILES = [
@@ -94,8 +94,11 @@ self.addEventListener('notificationclick', event => {
   event.notification.close();
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const url = event.notification.data.url;
       const open = list.find(c => 'focus' in c);
-      return open ? open.focus() : self.clients.openWindow(event.notification.data.url);
+      if (!open) return self.clients.openWindow(url);
+      // L'appli est déjà ouverte : on l'amène sur la bonne page (ex. le quiz)
+      return (url.includes('quiz=1') && 'navigate' in open ? open.navigate(url) : Promise.resolve(open)).then(c => (c || open).focus());
     }),
   );
 });

@@ -1185,18 +1185,34 @@ const FACT_LIST = Object.values(FACTS);
 let factIndex = Math.floor(Date.now() / 864e5) % FACT_LIST.length;
 const currentFact = () => FACT_LIST[factIndex];
 
+// Jours dépliés dans la vue Semaine (par défaut : aujourd'hui)
+const todayIndex = (new Date().getDay() + 6) % 7; // 0 = lundi
+const openDays = new Set([todayIndex]);
+
+// Résumé d'un jour replié : les plats du jour, en quelques mots
+function dayPreview(day) {
+  return day.meals
+    .map(m => (m.external ? EXTERNAL[m.external].label : RECIPE_BY_ID[m.recipeId].name))
+    .join(' · ');
+}
+
 function renderWeek() {
   const plan = state.plan;
   $('#week').innerHTML = plan.map((day, d) => `
-    <article class="card day">
-      <div class="day-head">
-        <h3><span class="day-emoji" aria-hidden="true">${DAY_EMOJIS[d]}</span>${DAYS[d]}</h3>
-        <button type="button" class="icon-btn" data-reday="${d}" title="Régénérer toute la journée">↻ Refaire</button>
+    <details class="card day" data-day="${d}" ${openDays.has(d) ? 'open' : ''}>
+      <summary class="day-head">
+        <span class="day-name">
+          <h3>${DAYS[d]}</h3>${d === todayIndex ? '<span class="today">Aujourd\'hui</span>' : ''}
+        </span>
+        <span class="day-preview">${esc(dayPreview(day))}</span>
+      </summary>
+      <div class="day-body">
+        <div class="day-tools"><button type="button" class="icon-btn" data-reday="${d}" title="Régénérer toute la journée">↻ Refaire la journée</button></div>
+        ${dayBanners(d)}
+        ${day.meals.map((m, i) => renderMeal(m, d, i)).join('')}
+        <div class="bars">${personBars(day, d)}</div>
       </div>
-      ${dayBanners(d)}
-      ${day.meals.map((m, i) => renderMeal(m, d, i)).join('')}
-      <div class="bars">${personBars(day, d)}</div>
-    </article>`).join('');
+    </details>`).join('');
 
   const cap = budgetCap();
   const cost = weekCost();
@@ -1731,6 +1747,13 @@ function bindEvents() {
     renderCatalog();
   });
 
+  $('#week').addEventListener('toggle', e => {
+    const day = e.target.closest?.('[data-day]');
+    if (!day || e.target !== day) return;
+    const d = Number(day.dataset.day);
+    if (day.open) openDays.add(d); else openDays.delete(d);
+  }, true);
+
   $('#week').addEventListener('click', e => {
     const swap = e.target.closest('[data-swap]');
     if (swap) {
@@ -1844,7 +1867,7 @@ function bindEvents() {
 
   $('#btn-print').addEventListener('click', () => window.print());
   // À l'impression, on déplie toutes les recettes
-  window.addEventListener('beforeprint', () => document.querySelectorAll('.meal details').forEach(d => { d.open = true; }));
+  window.addEventListener('beforeprint', () => document.querySelectorAll('.day, .meal details').forEach(d => { d.open = true; }));
 
   $('#btn-uncheck').addEventListener('click', () => {
     state.checked = {};
@@ -2045,6 +2068,13 @@ bindWaterEvents();
 render();
 $('#profil').open = !state.people.every(p => p.saved);
 try { const page = sessionStorage.getItem('page'); if (page && $(`#page-${page}`)) showPage(page); } catch { /* ignore */ }
+// Ouverture depuis la notification du dimanche : on va droit au quiz
+if (new URLSearchParams(location.search).has('quiz')) {
+  showPage('semaine');
+  quizStep = 0;
+  openQuiz();
+  history.replaceState(null, '', location.pathname);
+}
 registerServiceWorker();
 showVersion();
 $('#btn-check-update').addEventListener('click', () => (manualUpdate ? manualUpdate() : ($('#update-status').textContent = "Les mises à jour se vérifient depuis l'appli en ligne.")));

@@ -24,7 +24,7 @@ Les données de chaque appareil (profils, menu, cases cochées) sont conservées
 ## Fonctionnalités
 
 L'appli est organisée en **4 pages**, accessibles par une barre de navigation en bas de l'écran :
-- **Semaine** (accueil) : le menu, le bouton « Nos envies » (quiz en fenêtre) et « Régénérer » ;
+- **Semaine** (accueil) : les 7 jours repliés sur une ligne (aperçu des plats, aujourd'hui ouvert par défaut), le bouton « Nos envies » (quiz en fenêtre) et « Régénérer » ;
 - **Courses** : la liste de courses, Open Food Facts et le stock du Drive ;
 - **Recettes** : le catalogue complet, avec recherche, filtres et favoris ;
 - **Réglages** : le foyer, les préférences et les rappels d'eau, repliés sur une ligne de résumé une fois configurés.
@@ -81,6 +81,10 @@ Pour chaque jour :
 5. On répète 500 fois et on garde la combinaison qui minimise la somme des écarts des deux personnes.
 
 Les quantités sont ensuite arrondies à 5 g près (ou à l'unité pour les œufs et les tortillas), et les totaux affichés sont recalculés sur ces quantités arrondies.
+
+## Rappel du dimanche soir
+
+Le même robot GitHub Actions envoie chaque **dimanche à 19 h** une notification « La semaine prochaine se prépare ». La toucher ouvre l'appli directement sur le quiz « Nos envies » (lien `?quiz=1`).
 
 ## Intégration Open Food Facts
 
