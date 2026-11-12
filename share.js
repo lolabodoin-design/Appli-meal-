@@ -126,28 +126,35 @@
 
     ctx.fillStyle = C.muted; ctx.font = `400 22px ${sans}`;
     ctx.fillText('Healthy & protéiné · Le menu de la semaine', W / 2, H - 46);
-    return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    const dataUrl = canvas.toDataURL('image/png');
+    const png = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    return { png, dataUrl };
   }
 
   // ---------- Fenêtre d'aperçu et partage
+  // iPhone (appli installée) : le téléchargement direct ne marche pas ; on passe par le
+  // menu de partage, ou par un appui long sur l'image (« Enregistrer dans Photos »).
+  const mobile = document.documentElement.classList.contains('is-mobile');
+  let file = null;
+
   async function open() {
     if (!state.plan) return;
     sheet.hidden = false;
     el('share-status').textContent = 'Préparation de l\'image…';
     el('share-preview').removeAttribute('src');
     el('btn-share-go').disabled = true;
-    blob = await drawMenu();
+    const { png, dataUrl } = await drawMenu();
+    blob = png;
+    file = new File([png], 'menu-de-la-semaine.png', { type: 'image/png' });
     if (url) URL.revokeObjectURL(url);
-    url = URL.createObjectURL(blob);
-    el('share-preview').src = url;
+    url = URL.createObjectURL(png);
+    el('share-preview').src = dataUrl; // une image « data: » s'enregistre par appui long sur iPhone
     el('share-dl').href = url;
     el('share-status').textContent = '';
     el('btn-share-go').disabled = false;
-    const file = new File([blob], 'menu-de-la-semaine.png', { type: 'image/png' });
-    const canShare = !!navigator.canShare && navigator.canShare({ files: [file] });
-    el('btn-share-go').hidden = !canShare;
-    el('share-dl').classList.toggle('primary', !canShare);
-    el('share-dl').classList.toggle('secondary', canShare);
+    el('btn-share-go').hidden = !navigator.share;
+    el('share-dl').hidden = mobile;
+    el('share-tip').hidden = !mobile;
   }
   function close() { sheet.hidden = true; }
 
@@ -155,12 +162,19 @@
   el('btn-share-close').addEventListener('click', close);
   sheet.addEventListener('click', e => { if (e.target === sheet) close(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !sheet.hidden) close(); });
-  el('btn-share-go').addEventListener('click', async () => {
-    const file = new File([blob], 'menu-de-la-semaine.png', { type: 'image/png' });
-    try {
-      await navigator.share({ files: [file], title: 'Le menu de la semaine' });
-    } catch (e) {
-      if (e.name !== 'AbortError') el('share-status').textContent = 'Partage impossible : utilise « Enregistrer l\'image ».';
+  // Pas d'« await » avant navigator.share : Safari exige que l'appel suive directement le toucher
+  el('btn-share-go').addEventListener('click', () => {
+    if (!file) return;
+    const data = navigator.canShare && navigator.canShare({ files: [file] }) ? { files: [file] } : null;
+    if (!data) {
+      el('share-status').textContent = mobile
+        ? 'Ton téléphone ne permet pas de partager l\'image d\'ici : appuie longuement sur l\'image puis « Enregistrer dans Photos ».'
+        : 'Partage indisponible sur ce navigateur : utilise « Enregistrer l\'image ».';
+      return;
     }
+    navigator.share(data).catch(e => {
+      if (e.name === 'AbortError') return;
+      el('share-status').textContent = `Le partage n'a pas abouti (${e.name}). Appuie longuement sur l'image pour l'enregistrer.`;
+    });
   });
 })();

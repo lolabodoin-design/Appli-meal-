@@ -714,7 +714,9 @@ html.cooking, html.cooking body { overflow: hidden; }
 .share-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .btn-link { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 15px 28px; text-decoration: none; font-weight: 500; color: var(--text); }
 .btn-link.primary { color: var(--surface); }
-.share-actions [hidden] { display: none; }
+.share-actions [hidden], .share-tip[hidden] { display: none; }
+.share-tip { text-align: center; margin: -6px 0 14px; }
+.share-preview { -webkit-touch-callout: default; user-select: auto; }
 
 /* ---------- Encart « De saison » illustré */
 .season-card { background: color-mix(in srgb, var(--sage) 9%, var(--surface)); border: 1px solid color-mix(in srgb, var(--sage) 22%, var(--border));
