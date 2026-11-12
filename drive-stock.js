@@ -183,24 +183,45 @@ function leclercStockCheck() {
     history.replaceState(null, '', location.pathname + location.search);
   }
 
+  // Autre voie, indépendante de l'adresse : on demande la liste à l'onglet de l'appli qui a ouvert Leclerc
+  var APP_ORIGIN = 'https://lolabodoin-design.github.io';
+  window.addEventListener('message', function (e) {
+    if (e.origin !== APP_ORIGIN || !e.data || e.data.type !== 'mp-list' || sentList) return;
+    sentList = e.data.list;
+    if (root.getElementById('in') && !stopped) showInput('');
+  });
+  try { if (window.opener) window.opener.postMessage('mp-get-list', APP_ORIGIN); } catch (e) { /* onglet de l'appli fermé */ }
+
   function showInput(msg) {
     var count = 0;
     try { count = JSON.parse(sentList).articles.length; } catch (e) { /* pas de liste transmise */ }
     body.innerHTML = (msg ? '<p class="warn">' + esc(msg) + '</p>' : '')
       + (count
         ? '<p class="big">' + count + ' produits à ajouter</p>'
-        : '<p>Collez ici la liste copiée depuis l\'appli :</p>')
-      + '<textarea id="in" placeholder=\'{"v":1,"articles":[...]}\'' + (count ? ' style="display:none"' : '') + '></textarea>'
+        : '<p>Votre liste n\'est pas arrivée toute seule. Collez-la ici (⌘ + V), ou :</p>'
+          + '<button class="go2" id="paste">Coller ma liste</button>')
+      + '<textarea id="in" placeholder="Collez ici la liste copiée depuis l\'appli"' + (count ? ' style="display:none"' : '') + '></textarea>'
       + '<button class="go main" id="fill">Tout mettre dans le panier</button>'
       + '<p class="muted">Le site choisit le produit en stock le moins cher au kilo. Rien n\'est payé : vous validez la commande vous-même.</p>'
       + '<p class="links"><a href="#" id="run">Vérifier seulement le stock</a> · <label><input type="checkbox" id="test"> mode test (1 produit)</label></p>';
     function start(fill) {
       var data;
       try { data = JSON.parse(root.getElementById('in').value); } catch (e) { data = null; }
-      if (!data || !data.articles || !data.articles.length) { showInput('Liste illisible : recopie-la depuis l\'appli.'); return; }
+      if (!data || !data.articles || !data.articles.length) {
+        showInput('Aucune liste trouvée. Dans l\'appli : Courses → Options avancées → « Copier la liste pour Leclerc », puis collez-la ici.');
+        return;
+      }
       run(data.articles, fill, fill && root.getElementById('test').checked);
     }
     root.getElementById('run').onclick = function (e) { e.preventDefault(); start(false); };
+    if (sentList) root.getElementById('in').value = sentList;
+    var paste = root.getElementById('paste');
+    if (paste) paste.onclick = function () {
+      navigator.clipboard.readText().then(function (text) {
+        try { if (JSON.parse(text).articles.length) { sentList = text; showInput(''); return; } } catch (e) { /* pas une liste */ }
+        showInput('Le presse-papiers ne contient pas la liste. Dans l\'appli : Courses → Options avancées → « Copier la liste pour Leclerc ».');
+      }, function () { root.getElementById('in').focus(); });
+    };
     root.getElementById('fill').onclick = function () { start(true); };
   }
 
@@ -286,5 +307,4 @@ function leclercStockCheck() {
   }
 
   showInput('');
-  if (sentList) root.getElementById('in').value = sentList;
 }

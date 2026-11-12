@@ -1845,6 +1845,7 @@ function bindEvents() {
   // Copiée aussi dans le presse-papiers, au cas où (ex. connexion au compte qui ferait perdre l'adresse).
   // Guide en cartes : affiché automatiquement la première fois, puis via « Comment ça marche ? »
   let guideSeen = false;
+  let lastDriveList = '';
   try { guideSeen = localStorage.getItem('guide-panier') === '1'; } catch { /* ignore */ }
   const carousel = $('#guide-carousel');
   const guideIndex = () => Math.round(carousel.scrollLeft / carousel.clientWidth);
@@ -1880,13 +1881,22 @@ function bindEvents() {
 
   function openDriveWithList() {
     const list = JSON.stringify(cartExport());
+    lastDriveList = list;
+    // Copie de secours d'abord, tant que la page a encore le focus (Safari refuse après)
+    navigator.clipboard?.writeText(list).catch(() => { /* pas grave */ });
     const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(list))));
     const base = driveStoreBase() || DEFAULT_DRIVE_URL;
-    // On ouvre d'abord (Safari bloque les fenêtres qui ne suivent pas immédiatement un clic)…
-    window.open(`${base}/recherche.aspx?TexteRecherche=#mp=${encoded}`, '_blank', 'noopener');
-    // … puis on copie la liste en secours
-    navigator.clipboard?.writeText(list).catch(() => { /* pas grave */ });
+    // Pas de « noopener » : le favori pourra demander la liste à cet onglet (voir l'écoute « mp-get-list »)
+    window.open(`${base}/recherche.aspx?TexteRecherche=#mp=${encoded}`, 'leclerc-drive');
   }
+
+  // Le favori, ouvert sur Leclerc, demande la liste à l'onglet de l'appli qui l'a ouvert
+  window.addEventListener('message', e => {
+    let host = '';
+    try { host = new URL(e.origin).hostname; } catch { return; }
+    if (e.data !== 'mp-get-list' || !/(^|\.)leclercdrive\.fr$/.test(host)) return;
+    e.source?.postMessage({ type: 'mp-list', list: lastDriveList || JSON.stringify(cartExport()) }, e.origin);
+  });
 
   $('#btn-copy-drive').addEventListener('click', async e => {
     try {
