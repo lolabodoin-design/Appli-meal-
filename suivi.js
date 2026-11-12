@@ -163,6 +163,7 @@
   let photoSlot = null;
   let photoResult = null;
   let photoFile = null, photoUrl = null;
+  let replaceMsg = '';
 
   // Photo réduite (1600 px max, JPEG) : plus légère à partager, suffisante pour l'analyse
   function preparePhoto(file) {
@@ -256,6 +257,16 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
         ${res.aliments.length ? `<ul class="ph-list">${res.aliments.map(a => `<li><span>${esc(a.nom)}</span><small>${a.g} g · ${a.kcal} kcal</small></li>`).join('')}</ul>` : ''}
         ${res.conseil ? `<p class="ph-tip">${esc(res.conseil)}</p>` : ''}
         <p class="hint">Estimation sur photo${res.confiance ? ` · confiance ${esc(res.confiance)}` : ''} : à prendre comme un ordre de grandeur.</p>
+        ${state.plan ? `<div class="ph-replace">
+          <b>Tu n'as pas mangé le repas prévu ?</b>
+          <p class="hint">Remplace-le par cette photo : ta journée est recalculée et tes repas suivants sont ajustés pour tenir tes objectifs.</p>
+          <div class="ph-replace-row">
+            <select id="ph-day" aria-label="Jour">${DAYS.map((n, k) => `<option value="${k}" ${k === todayIndex ? 'selected' : ''}>${k === todayIndex ? 'Aujourd\'hui' : k === todayIndex - 1 ? 'Hier' : n}</option>`).join('')}</select>
+            <select id="ph-slot" aria-label="Repas">${SLOT_ORDER.map(k => `<option value="${k}" ${k === photoSlot ? 'selected' : ''}>${SLOTS[k].label}</option>`).join('')}</select>
+          </div>
+          <button type="button" class="primary small" data-ph-replace>Remplacer par ma photo</button>
+        </div>` : ''}
+        ${replaceMsg ? `<div class="ph-replaced">${replaceMsg}</div>` : ''}
       </div>`;
   }
 
@@ -277,10 +288,9 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
         <li><button type="button" class="primary small" data-ph-send ${photoFile ? '' : 'disabled'}>Envoyer à Claude</button>
           <small>Dans le menu de partage, choisis <b>Claude</b> : la photo et la demande sont déjà dedans, il ne reste qu'à envoyer.
             <button type="button" class="link-btn ph-alt" data-ph-copy>Sans photo ici ? Copier seulement la demande et ouvrir Claude</button></small></li>
-        <li><span>Quand Claude a répondu : appui long sur sa réponse → Copier, puis :</span>
-          <div class="ph-paste"><button type="button" class="secondary" data-ph-paste>Coller la réponse</button></div>
-          <textarea id="ph-in" rows="3" placeholder="…ou colle-la ici à la main"></textarea>
-          <button type="button" class="chip-btn" data-ph-read>Lire la réponse</button></li>
+        <li><span>Quand Claude a répondu : appui long sur sa réponse → Copier. Puis touche la case ci-dessous → <b>Coller</b> : l'analyse se lance toute seule.</span>
+          <textarea id="ph-in" rows="3" placeholder="Touche ici, puis Coller"></textarea>
+          <button type="button" class="chip-btn ph-read" data-ph-read>Lire la réponse</button></li>
       </ol>
       <p class="ph-msg" aria-live="polite">${msg}</p>
       ${photoResult ? resultHTML(photoResult, plan) : ''}
@@ -292,6 +302,7 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
     const res = parseAnswer(text || '');
     if (!res) { renderPhoto('Je n\'arrive pas à lire cette réponse. Vérifie que tu as copié tout le bloc de Claude (avec les accolades { }).'); return; }
     photoResult = res;
+    replaceMsg = '';
     const key = todayKey();
     photos()[key] ||= [];
     // Même réponse collée deux fois : on ne la compte qu'une fois
@@ -340,11 +351,24 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
       }
       return;
     }
-    if (e.target.closest('[data-ph-paste]')) {
-      navigator.clipboard?.readText().then(readAnswer, () => renderPhoto('Ton téléphone a refusé de coller : colle la réponse dans la case ci-dessous.'));
+    if (e.target.closest('[data-ph-read]')) { readAnswer(el('ph-in').value); return; }
+    if (e.target.closest('[data-ph-replace]') && photoResult) {
+      const d = Number(el('ph-day').value), slot = el('ph-slot').value, p = person();
+      const res = replaceWithPhoto(d, slot, p.id, photoResult);
+      if (!res) { replaceMsg = `Pas de ${SLOTS[slot].label.toLowerCase()} prévu ce jour-là dans le menu.`; renderPhoto(); return; }
+      const dayName = d === todayIndex ? 'aujourd\'hui' : d === todayIndex - 1 ? 'hier' : DAYS[d].toLowerCase();
+      replaceMsg = `<b>C'est fait : ${esc(SLOTS[slot].label.toLowerCase())} de ${dayName} remplacé.</b><br>`
+        + `Journée de ${esc(p.name)} : ${r0(res.total.kcal)} kcal pour un objectif de ${r0(res.target.kcal)} · P ${r0(res.total.p)} / ${r0(res.target.p)} g`
+        + (res.changed.length
+          ? `<br>Repas ajustés : ${res.changed.map(c => `${esc(SLOTS[c.slot].label.toLowerCase())} ${r0(c.before)} → ${r0(c.after)} kcal`).join(', ')}.`
+          : (d < todayIndex ? '<br>Journée passée : rien à réajuster, elle est juste mise à jour dans ton bilan.' : '<br>Aucun autre repas à ajuster ce jour-là.'))
+        + (d >= todayIndex && res.total.kcal > res.target.kcal * 1.1
+          ? `<br>Même en allégeant les repas suivants au maximum, la journée dépasse de ${r0(res.total.kcal - res.target.kcal)} kcal : pas de panique, ça s'équilibre sur la semaine.`
+          : d >= todayIndex && res.total.kcal < res.target.kcal * 0.9
+            ? `<br>Il te manque encore ${r0(res.target.kcal - res.total.kcal)} kcal : une collation en plus serait la bienvenue.` : '');
+      renderPhoto();
       return;
     }
-    if (e.target.closest('[data-ph-read]')) { readAnswer(el('ph-in').value); return; }
     const del = e.target.closest('[data-ph-del]');
     if (del) {
       const key = todayKey(), mine = (photos()[key] || []).filter(x => x.who === person().id);
@@ -361,6 +385,12 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
       const upTo = Math.min(goal, (i + 1) * GLASS);
       setDrunk(drunk(p.id) === upTo ? i * GLASS : upTo);
     }
+  });
+  // Dès qu'une réponse complète est collée dans la case, on la lit (le bouton « Coller » est bloqué sur iPhone)
+  page.addEventListener('input', e => {
+    if (e.target.id !== 'ph-in') return;
+    const v = e.target.value;
+    if (v.includes('{') && v.lastIndexOf('}') > v.indexOf('{')) readAnswer(v);
   });
   page.addEventListener('change', e => {
     if (e.target.id === 'ph-file' && e.target.files?.[0]) preparePhoto(e.target.files[0]);

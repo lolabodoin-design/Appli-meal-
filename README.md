@@ -166,3 +166,7 @@ Sans réponse, le menu est calculé exactement comme d'habitude.
 - **Robot photo (gratuit, via l'appli Claude)** : choix du repas → photo prise dans l'appli → « Envoyer à Claude » (partage iPhone :
   photo + demande avec le repas prévu et un format JSON imposé ; demande aussi copiée) → envoi dans Claude → « Coller la réponse » : aliments, calories, macros
   comparés au repas prévu, conseil, historique du jour. Version automatique possible via l'API Claude (payante, clé côté serveur).
+- **Remplacer un repas par la photo** : après l'analyse, choix du jour et du repas → le repas devient « mangé » pour cette
+  personne seule (`meal.eaten`), la journée est recalculée ; les repas encore à venir (aujourd'hui : ceux d'après ; jour
+  futur : tous les autres ; jour passé : aucun) sont agrandis ou réduits ensemble pour compléter les calories, dans les
+  limites de portion. « Annuler » dans la Semaine rétablit le repas prévu. La réponse collée est lue automatiquement.

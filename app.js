@@ -333,6 +333,8 @@ const recipeOf = (meal, personId) => RECIPE_BY_ID[meal.variants?.[personId] || m
 
 // Portion d'une personne pour un repas : quantités arrondies + totaux réels (null si elle n'en mange pas)
 function mealDetail(meal, personId) {
+  const eaten = meal.eaten?.[personId];
+  if (eaten) return { items: [], totals: { ...eaten.total }, eaten };
   const scale = meal.scales[personId];
   if (scale == null) return null;
   if (meal.external) return { items: [], totals: externalTotals(meal.external, personById(personId)) };
@@ -587,18 +589,19 @@ function optimizeHousehold(meals, d) {
   const scales = meals.map(() => ({}));
   let err = 0;
   for (const person of state.people) {
-    meals.forEach((m, i) => { scales[i][person.id] = m.external && personEats(person, m.slot) ? 1 : null; });
+    const fixed = m => m.eaten?.[person.id]?.total || (m.external ? externalTotals(m.external, person) : null);
+    meals.forEach((m, i) => { scales[i][person.id] = fixed(m) && personEats(person, m.slot) ? 1 : null; });
     if (!person.active) continue;
 
     const full = dayTargets(person, d);
     const T = { ...full };
     for (const m of meals) {
-      if (!m.external || !personEats(person, m.slot)) continue;
-      const e = externalTotals(m.external, person);
+      const e = fixed(m);
+      if (!e || !personEats(person, m.slot)) continue;
       for (const k of MACROS) T[k] = Math.max(full[k] * 0.25, T[k] - e[k]);
     }
 
-    const idx = meals.map((_, i) => i).filter(i => !meals[i].external && personEats(person, meals[i].slot));
+    const idx = meals.map((_, i) => i).filter(i => !fixed(meals[i]) && personEats(person, meals[i].slot));
     if (!idx.length) continue;
     const res = optimizeScales(idx.map(i => meals[i].variants?.[person.id] || meals[i].recipe), idx.map(i => meals[i].slot), T);
     idx.forEach((i, k) => { scales[i][person.id] = res.scales[k]; });
@@ -643,11 +646,12 @@ function familyPenalty(recipes, families) {
 // Repas du plan → format attendu par optimizeHousehold
 const mapValues = (obj, fn) => Object.fromEntries(Object.entries(obj || {}).map(([k, v]) => [k, fn(v)]));
 const toOptMeals = day => day.meals.map(m => ({
-  slot: m.slot, external: m.external, recipe: RECIPE_BY_ID[m.recipeId], variants: mapValues(m.variants, id => RECIPE_BY_ID[id]),
+  slot: m.slot, external: m.external, eaten: m.eaten, recipe: RECIPE_BY_ID[m.recipeId], variants: mapValues(m.variants, id => RECIPE_BY_ID[id]),
 }));
 function fromOptMeal(m, scales) {
-  if (m.external) return { slot: m.slot, external: m.external, scales };
+  if (m.external) return { slot: m.slot, external: m.external, scales, ...(m.eaten ? { eaten: m.eaten } : {}) };
   const out = { slot: m.slot, recipeId: m.recipe.id, scales };
+  if (m.eaten) out.eaten = m.eaten;
   if (m.variants && Object.keys(m.variants).length) out.variants = mapValues(m.variants, r => r.id);
   return out;
 }
@@ -773,6 +777,66 @@ function rateRecipe(id, rating) {
 }
 
 // Quand les objectifs ou les participants changent, on garde les recettes et on recalcule les portions
+// Remplace le repas « slot » du jour d par ce qui a été mangé (analyse photo), pour une personne,
+// puis réajuste ses repas encore à venir ce jour-là pour tenir ses objectifs.
+// Jour passé : rien n'est réajusté. Aujourd'hui : seulement les repas après celui-ci. Jour à venir : tous les autres.
+function replaceWithPhoto(d, slot, personId, photo) {
+  const day = state.plan?.[d];
+  const i = day?.meals.findIndex(m => m.slot === slot);
+  if (!day || i < 0) return null;
+  const person = personById(personId);
+  const before = day.meals.map(m => mealDetail(m, personId)?.totals.kcal ?? null);
+  day.meals[i].eaten = { ...(day.meals[i].eaten || {}), [personId]: { plat: photo.plat, total: photo.total, date: new Date().toISOString() } };
+  const adjust = day.meals.map((m, j) => j !== i && !m.external && !m.eaten?.[personId] && mealDetail(m, personId)
+    && (d > todayIndex || (d === todayIndex && j > i)));
+  if (adjust.some(Boolean)) {
+    const full = dayTargets(person, d);
+    const T = { ...full };
+    day.meals.forEach((m, j) => {
+      if (adjust[j]) return;
+      const t = mealDetail(m, personId)?.totals;
+      if (t) for (const k of MACROS) T[k] = Math.max(full[k] * 0.15, T[k] - t[k]);
+    });
+    // Les repas ajustés grandissent ou rétrécissent ensemble pour compléter les calories,
+    // dans les limites de portion de chaque créneau (plus lisible qu'un rééquilibrage macro par macro)
+    const idx = adjust.map((a, j) => (a ? j : -1)).filter(j => j >= 0);
+    let free = idx.slice(), need = T.kcal;
+    for (let pass = 0; pass < 4 && free.length; pass++) {
+      const cur = free.reduce((a, j) => a + mealDetail(day.meals[j], personId).totals.kcal, 0);
+      const f = cur > 0 ? need / cur : 1;
+      const clamped = [];
+      for (const j of free) {
+        const sl = SLOTS[day.meals[j].slot];
+        const next = day.meals[j].scales[personId] * f;
+        const v = clamp(next, sl.min, sl.max);
+        day.meals[j].scales[personId] = v;
+        if (v !== next) clamped.push(j);
+      }
+      if (!clamped.length) break;
+      need -= clamped.reduce((a, j) => a + mealDetail(day.meals[j], personId).totals.kcal, 0);
+      free = free.filter(j => !clamped.includes(j));
+    }
+  }
+  saveState();
+  render();
+  const after = day.meals.map(m => mealDetail(m, personId)?.totals.kcal ?? null);
+  return {
+    total: dayTotals(day, personId), target: dayTargets(person, d),
+    changed: day.meals.map((m, j) => ({ slot: m.slot, before: before[j], after: after[j] }))
+      .filter((x, j) => j !== i && x.before != null && Math.abs(x.after - x.before) >= 5),
+  };
+}
+function undoPhotoMeal(d, i, personId) {
+  const m = state.plan?.[d]?.meals[i];
+  if (!m?.eaten?.[personId]) return;
+  delete m.eaten[personId];
+  if (!Object.keys(m.eaten).length) delete m.eaten;
+  const { scales } = optimizeHousehold(toOptMeals(state.plan[d]), d);
+  state.plan[d].meals.forEach((x, j) => { x.scales = scales[j]; });
+  saveState();
+  render();
+}
+
 function rebalancePlan() {
   if (!state.plan) return;
   state.plan.forEach((day, d) => {
@@ -1131,7 +1195,7 @@ function macroLine(t) {
     <span class="mf">L ${Math.round(t.f)} g</span>`;
 }
 
-function renderExternalMeal(meal) {
+function renderExternalMeal(meal, d, i) {
   const ext = EXTERNAL[meal.external];
   const eaters = state.people.map(p => ({ p, detail: mealDetail(meal, p.id) })).filter(x => x.detail);
   return `
@@ -1140,7 +1204,10 @@ function renderExternalMeal(meal) {
       <div class="ext-title">${ext.icon} ${ext.label} : pas de cuisine !</div>
       <p class="steps">${esc(ext.tip)}</p>
       ${meal.external === 'cantine' ? whyBox(WHY.cantine) : ''}
-      ${eaters.map(({ p, detail }) => `<div class="macros">${who(p)} <span>≈ ${Math.round(detail.totals.kcal)} kcal estimées</span></div>`).join('')}
+      ${eaters.map(({ p, detail }) => detail.eaten
+        ? `<div class="eaten-block"><span class="eaten-label">Photo de ${who(p)}</span><b>${esc(detail.eaten.plat)}</b> · ${Math.round(detail.totals.kcal)} kcal
+            <button type="button" class="link-btn" data-uneat="${d},${i},${p.id}">Annuler</button></div>`
+        : `<div class="macros">${who(p)} <span>≈ ${Math.round(detail.totals.kcal)} kcal estimées</span></div>`).join('')}
     </div>`;
 }
 
@@ -1219,16 +1286,23 @@ function rateButtons(recipe) {
 }
 
 function renderMeal(meal, d, i) {
-  if (meal.external) return renderExternalMeal(meal);
+  if (meal.external) return renderExternalMeal(meal, d, i);
   const recipe = RECIPE_BY_ID[meal.recipeId];
   const ctx = dayContext(d);
   const tags = [
     meal.slot === 'dejeuner' && ctx.lunch === 'box' && recipe.flags.has('box') ? 'à emporter' : '',
     meal.slot === 'diner' && ctx.plaisir && recipe.flags.has('plaisir') ? 'plaisir' : '',
   ].filter(Boolean).map(t => `<span class="meal-tag">${t}</span>`).join('');
-  const eaters = state.people
+  const all = state.people
     .map(p => ({ p, detail: mealDetail(meal, p.id) }))
     .filter(x => x.detail);
+  const eaters = all.filter(x => !x.detail.eaten);
+  const photoBlocks = all.filter(x => x.detail.eaten).map(({ p, detail }) => `
+    <div class="eaten-block">
+      <span class="eaten-label">Remplacé par une photo pour ${who(p)}</span>
+      <b>${esc(detail.eaten.plat)}</b> · ${Math.round(detail.totals.kcal)} kcal
+      <button type="button" class="link-btn" data-uneat="${d},${i},${p.id}">Annuler</button>
+    </div>`).join('');
   const common = eaters.filter(({ p }) => !meal.variants?.[p.id]);
   const variantBlocks = eaters.filter(({ p }) => meal.variants?.[p.id]).map(x => `
     <div class="variant">
@@ -1244,7 +1318,8 @@ function renderMeal(meal, d, i) {
       </div>
       ${common.length ? recipeDetails(recipe, common, ctx) : ''}
       ${variantBlocks}
-      ${eaters.map(({ p, detail }) => `<div class="macros">${who(p)} ${macroLine(detail.totals)}</div>`).join('')}
+      ${photoBlocks}
+      ${all.map(({ p, detail }) => `<div class="macros">${who(p)} ${macroLine(detail.totals)}</div>`).join('')}
     </div>`;
 }
 
@@ -1952,6 +2027,12 @@ function bindEvents() {
   }, true);
 
   $('#week').addEventListener('click', e => {
+    const un = e.target.closest('[data-uneat]');
+    if (un) {
+      const [d, i, pid] = un.dataset.uneat.split(',');
+      undoPhotoMeal(Number(d), Number(i), pid);
+      return;
+    }
     const swap = e.target.closest('[data-swap]');
     if (swap) {
       const [d, i] = swap.dataset.swap.split(',').map(Number);
