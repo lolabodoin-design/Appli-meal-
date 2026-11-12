@@ -1326,7 +1326,7 @@ function renderShopping() {
           </label>
           <div class="item-actions">
             ${offLinkable(ing)
-              ? `<button type="button" class="chip-btn desktop-only ${offOpen.has(id) ? 'active' : ''}" data-off-toggle="${id}">Produits réels</button>`
+              ? `<button type="button" class="chip-btn ${offOpen.has(id) ? 'active' : ''}" data-off-toggle="${id}">Produits réels</button>`
               : '<span class="fresh-tag">Produit frais</span>'}
             <a class="drive-link" href="${esc(productUrl(id))}" target="_blank" rel="noopener">Ajouter sur Leclerc ↗</a>
           </div>

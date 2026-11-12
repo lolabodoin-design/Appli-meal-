@@ -566,6 +566,13 @@ kbd { background: var(--surface); border: 1px solid var(--border); border-radius
   display: grid; grid-template-columns: 48px 1fr auto; gap: 10px; align-items: center;
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 8px;
 }
+/* Téléphone : les produits défilent en carrousel horizontal */
+@media (max-width: 640px) {
+  .products { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 82%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .products::-webkit-scrollbar { display: none; }
+  .product { scroll-snap-align: start; }
+  .product .chip-btn, .product button { min-height: 40px; }
+}
 .product.chosen { border-color: var(--accent); background: var(--accent-soft); }
 .product img, .img-ph { width: 48px; height: 48px; object-fit: contain; border-radius: 8px; background: #fff; display: grid; place-items: center; }
 .product-info { display: flex; flex-direction: column; min-width: 0; font-size: .78rem; }
