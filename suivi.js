@@ -222,8 +222,14 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
 
   // Lit la réponse de Claude : bloc ```json ou premier objet { … }
   function parseAnswer(text) {
-    const block = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    const raw = block ? block[1] : text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
+    // Copié depuis l'appli Claude, le texte peut contenir des guillemets typographiques,
+    // des espaces insécables ou une virgule en trop : on nettoie avant de lire
+    const clean = String(text)
+      .replace(/[\u201C\u201D\u201E\u00AB\u00BB]/g, '"').replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u00A0\u202F]/g, ' ');
+    const block = clean.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    let raw = block ? block[1] : clean.slice(clean.indexOf('{'), clean.lastIndexOf('}') + 1);
+    raw = raw.replace(/,\s*([}\]])/g, '$1').replace(/(\d),(\d)/g, '$1.$2');
     let d;
     try { d = JSON.parse(raw); } catch { return null; }
     if (!d || typeof d !== 'object') return null;
@@ -288,9 +294,13 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
         <li><button type="button" class="primary small" data-ph-send ${photoFile ? '' : 'disabled'}>Envoyer à Claude</button>
           <small>Dans le menu de partage, choisis <b>Claude</b> : la photo et la demande sont déjà dedans, il ne reste qu'à envoyer.
             <button type="button" class="link-btn ph-alt" data-ph-copy>Sans photo ici ? Copier seulement la demande et ouvrir Claude</button></small></li>
-        <li><span>Quand Claude a répondu : appui long sur sa réponse → Copier. Puis touche la case ci-dessous → <b>Coller</b> : l'analyse se lance toute seule.</span>
-          <textarea id="ph-in" rows="3" placeholder="Touche ici, puis Coller"></textarea>
-          <button type="button" class="chip-btn ph-read" data-ph-read>Lire la réponse</button></li>
+        <li><span>Quand Claude a répondu : appui long sur sa réponse → <b>Copier</b>, puis :</span>
+          <button type="button" class="primary small ph-insert" data-ph-insert>Insérer la réponse de Claude</button>
+          <small>L'iPhone affiche une bulle « Coller » : touche-la, le résultat apparaît.</small>
+          <details class="ph-manual"><summary>Ça ne marche pas ? Coller à la main</summary>
+            <textarea id="ph-in" rows="3" placeholder="Touche ici, puis Coller"></textarea>
+            <button type="button" class="chip-btn ph-read" data-ph-read>Lire la réponse</button>
+          </details></li>
       </ol>
       <p class="ph-msg" aria-live="polite">${msg}</p>
       ${photoResult ? resultHTML(photoResult, plan) : ''}
@@ -298,9 +308,21 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
         <ul>${today.map((x, i) => `<li>${esc(SLOTS[x.slot]?.label || '')} · ${esc(x.plat)} · ${x.total.kcal} kcal <button type="button" class="link-btn" data-ph-del="${i}" aria-label="Supprimer">✕</button></li>`).join('')}</ul></div>` : ''}`;
   }
 
+  function openManual(msg) {
+    renderPhoto(msg);
+    const box = page.querySelector('.ph-manual');
+    if (box) { box.open = true; el('ph-in').focus(); }
+  }
+
   function readAnswer(text) {
     const res = parseAnswer(text || '');
-    if (!res) { renderPhoto('Je n\'arrive pas à lire cette réponse. Vérifie que tu as copié tout le bloc de Claude (avec les accolades { }).'); return; }
+    if (!res) {
+      const peek = String(text || '').trim().slice(0, 60);
+      renderPhoto(peek
+        ? `Je n'arrive pas à lire cette réponse (j'ai reçu : « ${esc(peek)}… »). Copie toute la réponse de Claude, avec les accolades { }.`
+        : 'Le presse-papier est vide : dans Claude, fais un appui long sur la réponse → Copier, puis réessaie.');
+      return;
+    }
     photoResult = res;
     replaceMsg = '';
     const key = todayKey();
@@ -352,6 +374,11 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
       return;
     }
     if (e.target.closest('[data-ph-read]')) { readAnswer(el('ph-in').value); return; }
+    if (e.target.closest('[data-ph-insert]')) {
+      if (!navigator.clipboard?.readText) { openManual('Ton navigateur ne permet pas de lire le presse-papier : colle la réponse dans la case.'); return; }
+      navigator.clipboard.readText().then(readAnswer, err => openManual(`L'iPhone a refusé de coller (${esc(err?.name || 'erreur')}) : colle la réponse dans la case ci-dessous.`));
+      return;
+    }
     if (e.target.closest('[data-ph-replace]') && photoResult) {
       const d = Number(el('ph-day').value), slot = el('ph-slot').value, p = person();
       const res = replaceWithPhoto(d, slot, p.id, photoResult);
