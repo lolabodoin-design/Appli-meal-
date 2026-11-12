@@ -2346,5 +2346,16 @@ if (new URLSearchParams(location.search).has('quiz')) {
 }
 registerServiceWorker();
 showVersion();
-$('#btn-check-update').addEventListener('click', () => (manualUpdate ? manualUpdate() : ($('#update-status').textContent = "Les mises à jour se vérifient depuis l'appli en ligne.")));
+const APP_URL = 'https://lolabodoin-design.github.io/Appli-meal-/';
+$('#btn-check-update').addEventListener('click', () => {
+  if (manualUpdate) { manualUpdate(); return; }
+  // Page ouverte depuis un fichier de l'ordinateur, ou vérification impossible : on guide vers l'appli en ligne
+  $('#update-status').innerHTML = location.protocol === 'file:'
+    ? `Tu regardes une copie enregistrée sur cet appareil. Ouvre l'appli en ligne pour avoir la dernière version : <a href="${APP_URL}">${APP_URL}</a>`
+    : `Vérification impossible ici. <button type="button" class="link-btn" id="btn-hard-reload">Recharger l'appli</button> ou ouvre <a href="${APP_URL}">l'appli en ligne</a>.`;
+  $('#btn-hard-reload')?.addEventListener('click', async () => {
+    try { for (const k of await caches.keys()) await caches.delete(k); } catch { /* ignore */ }
+    location.reload();
+  });
+});
 renderWater();
