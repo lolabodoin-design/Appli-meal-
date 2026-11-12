@@ -106,7 +106,9 @@ La solution est un **favori** (bookmarklet), créé à partir de `drive-stock.js
 4. il affiche la liste avec les prix et le total, puis on colle le résultat dans l'appli ;
 5. l'appli montre le produit, le prix et le stock sous chaque ingrédient. Le bouton « 🔁 Adapter le menu au stock » **régénère le menu sans les ingrédients en rupture**.
 
-Le favori **n'ajoute rien au panier**, et il s'arrête dès que le site demande une vérification anti-robot, sans chercher à la contourner. Test réel sur le Drive de Clermont-Ferrand (magasin 016301) : skyr nature → 2 × Délisse 850 g à 2,60 € (12 en stock) ; œufs → 2 × 10 œufs plein air bio à 3,41 € (140 en stock).
+Avec **« Vérifier et remplir le panier »**, le favori ajoute aussi chaque produit choisi au panier de l'utilisateur connecté (`POST panier.aspx?op=1`, quantité finale voulue). Il **complète** le panier jusqu'à la quantité nécessaire sans jamais doubler, propose un **mode test** (un seul produit), vérifie la quantité confirmée par le site après chaque ajout, et ne paie jamais rien : la commande est validée par l'utilisateur.
+
+Il s'arrête dès que le site demande une vérification anti-robot, sans chercher à la contourner. Usage personnel : cette automatisation n'est pas prévue par les CGU de Leclerc. Test réel sur le Drive de Clermont-Ferrand (magasin 016301) : skyr nature → 2 × Délisse 850 g à 2,60 € (12 en stock) ; œufs → 2 × 10 œufs plein air bio à 3,41 € (140 en stock).
 
 ## Intégration Leclerc Drive : choix et limites
 

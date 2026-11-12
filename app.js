@@ -1869,6 +1869,12 @@ function bindEvents() {
   // À l'impression, on déplie toutes les recettes
   window.addEventListener('beforeprint', () => document.querySelectorAll('.day, .meal details').forEach(d => { d.open = true; }));
 
+  $('#btn-checkall').addEventListener('click', () => {
+    for (const { id } of shoppingList()) state.checked[id] = true;
+    saveState();
+    renderShopping();
+  });
+
   $('#btn-uncheck').addEventListener('click', () => {
     state.checked = {};
     saveState();

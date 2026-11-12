@@ -64,24 +64,25 @@
             <button type="button" id="btn-copy" class="secondary">Copier</button>
             <button type="button" id="btn-download" class="secondary">Télécharger</button>
             <button type="button" id="btn-print" class="secondary">Imprimer</button>
+            <button type="button" id="btn-checkall" class="ghost">Tout cocher</button>
             <button type="button" id="btn-uncheck" class="ghost">Tout décocher</button>
           </div>
           <details class="stock-card" id="stock-card">
             <summary>
               <span class="stock-logo" aria-hidden="true"></span>
-              <span><b>Stock réel de notre Drive</b><br><small>Vérifie ce qui est vraiment disponible dans ton magasin, avec les prix, et adapte le menu aux ruptures.</small></span>
+              <span><b>Remplir le panier Leclerc Drive</b><br><small>Depuis l'ordinateur : le favori vérifie le stock réel, choisit les produits et remplit ton panier en une fois.</small></span>
             </summary>
             <ol class="stock-steps">
               <li><b>Une seule fois :</b> glisse ce bouton dans ta barre de favoris →
                 <a id="bm-link" class="bookmarklet" href="#">Stock Drive</a>
                 <small>(barre de favoris invisible ? <kbd>Ctrl/⌘ + Maj + B</kbd>)</small></li>
               <li><button type="button" id="btn-copy-drive" class="secondary">Copier la liste pour le Drive</button></li>
-              <li>Ouvre <a id="drive-open" href="https://www.leclercdrive.fr/" target="_blank" rel="noopener">ton magasin Leclerc Drive</a>, clique sur le favori <b>Stock Drive</b>, colle la liste et lance la vérification (≈ 3 s par produit).</li>
-              <li>Clique sur « Copier le résultat pour l'appli » puis colle-le ici :
+              <li>Ouvre <a id="drive-open" href="https://www.leclercdrive.fr/" target="_blank" rel="noopener">ton magasin Leclerc Drive</a> <b>en étant connectée à ton compte</b>, clique sur le favori <b>Stock Drive</b>, colle la liste puis <b>« Vérifier et remplir le panier »</b> (≈ 5 s par produit). La première fois, coche le <b>mode test</b> : un seul produit est ajouté, pour vérifier.</li>
+              <li>Facultatif : clique sur « Copier le résultat pour l'appli » puis colle-le ici, pour voir les prix réels et adapter le menu aux ruptures :
                 <textarea id="stock-in" placeholder='{"v":1,"type":"stock-drive",…}'></textarea>
                 <button type="button" id="btn-import-stock" class="secondary">Importer le stock</button></li>
             </ol>
-            <p class="hint">Le favori lit les pages de recherche dans <b>ta</b> session, une recherche toutes les 3 secondes. Il n'ajoute rien au panier et s'arrête si Leclerc demande une vérification anti-robot.</p>
+            <p class="hint">Le favori agit dans <b>ta</b> session, à un rythme humain, et s'arrête si Leclerc demande une vérification anti-robot. Il ne paie jamais rien : tu valides ta commande toi-même. Après une mise à jour de l'appli, <b>remplace le favori</b> par le nouveau (glisse à nouveau le bouton) pour profiter des dernières améliorations.</p>
           </details>
           <div id="stock-summary"></div>
           <p class="checkout" id="checkout"></p>
