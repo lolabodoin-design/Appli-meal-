@@ -134,6 +134,7 @@
 
     if (step === 0) {
       body.innerHTML = `
+        <div class="cook-plate">${plateSVG(cur.recipe)}</div>
         <p class="cook-kicker">${esc(cur.forWho)}</p>
         ${cur.scalable ? `<div class="cook-servings">
             <button type="button" class="ghost" data-serv="-1" aria-label="Une portion de moins">−</button>
@@ -162,10 +163,7 @@
       const loved = state.ratings[cur.recipe.id] === 'love';
       body.innerHTML = `
         <div class="cook-end">
-          <svg viewBox="0 0 64 64" width="72" height="72" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M33 33 C32.5 25 36 19 44 15.5 C44.5 23.5 40.5 29.5 33 33 Z"/><path d="M34.5 30.5 L41.5 19.5"/>
-            <path d="M30.5 33 C30 28 27 24.5 21.5 23.5 C21.5 28.5 24.5 32 30.5 33 Z"/><path d="M8 33 H56"/>
-            <path d="M10 33 C10.5 44.5 19.5 52 32 52 C44.5 52 53.5 44.5 54 33"/><path d="M25 52 L26.5 56 H37.5 L39 52"/></svg>
+          <div class="cook-plate">${plateSVG(cur.recipe)}</div>
           <h3>Bon appétit !</h3>
           <p class="cook-hint">C'était bon ? Dis-le à l'appli, elle le proposera plus souvent.</p>
           <button type="button" class="rate-btn ${loved ? 'on' : ''}" data-cook-love>${loved ? '♥ On aime' : '♡ J\'aime cette recette'}</button>

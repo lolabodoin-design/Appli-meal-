@@ -134,3 +134,10 @@ Bouton « Cuisiner pas à pas » sous chaque recette (menu de la semaine et cata
 - minuteurs détectés dans le texte (« cuire 8 min » → bouton ⏱), sonnerie à la fin ;
 - l'écran reste allumé (API Wake Lock, si le navigateur la propose) ;
 - l'appli ne se recharge pas pour une mise à jour pendant qu'on cuisine.
+
+## Assiettes dessinées (`plates.js`)
+
+Chaque recette a un visuel d'assiette (ou de bol) vu du dessus, dessiné en SVG à partir de ses vrais ingrédients :
+une forme et deux couleurs douces par ingrédient (filet, grains, feuilles, rondelles, dés…), des parts proportionnelles
+aux quantités, et une disposition tirée au hasard mais toujours identique pour une recette (graine = identifiant).
+Aucune image à télécharger : léger, hors connexion, cohérent avec le logo et le thème clair/sombre.

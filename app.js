@@ -1151,7 +1151,7 @@ function recipeDetails(recipe, eaters, ctx = {}) {
   }).join('');
   return `
     <details>
-      <summary>${recipeTitle(recipe)}</summary>
+      <summary><span class="sum-plate">${plateSVG(recipe)}</span><span class="sum-title">${recipeTitle(recipe)}</span></summary>
       <table class="qty-table">
         <thead><tr><th></th>${eaters.map(({ p }) => `<th>${who(p)}</th>`).join('')}${showTotal ? '<th>À cuisiner</th>' : ''}</tr></thead>
         <tbody>${rows}</tbody>
@@ -1421,6 +1421,8 @@ function renderCatalog() {
     const typeLabel = { petitdej: 'Petit-déjeuner', plat: 'Plat', collation: 'Collation' }[r.type];
     return `
       <article class="recipe-card ${isDisliked(r) ? 'disliked' : ''}">
+        <div class="rc-plate">${plateSVG(r)}</div>
+        <div class="rc-body">
         <div class="recipe-meta">${typeLabel} · ${r.time} min · portion de base ${Math.round(b.kcal)} kcal · <span class="mp">P ${Math.round(b.p)} g</span></div>
         <details>
           <summary>${recipeTitle(r)}</summary>
@@ -1431,6 +1433,7 @@ function renderCatalog() {
           ${forWho.length < people.length ? `<p class="hint">Convient à : ${esc(forWho.join(', ') || 'personne, avec vos régimes actuels')}</p>` : ''}
         </details>
         ${rateButtons(r)}
+        </div>
       </article>`;
   }).join('') : `<p class="hint">${catalogFilter === 'love' ? 'Aucun favori pour l\'instant : touche « ♡ J\'aime » sur une recette.' : 'Aucune recette ne correspond.'}</p>`);
 }

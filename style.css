@@ -15,6 +15,7 @@
   --accent: #6b5444;        /* bois de noyer : couleur principale */
   --accent-strong: #4e3b2f;
   --accent-soft: #efe7dc;
+  --plate: #fffdfa; --plate-rim: #e6dccd; --plate-well: #f3ece1; --plate-shadow: rgba(80, 60, 40, .07);
   --sage: #8fa382;          /* sauge : touche « healthy » */
   --sage-soft: #e8ece2;
 
@@ -43,6 +44,7 @@
     --accent: #d8c3ae; --accent-strong: #eadccb; --accent-soft: #332c26; --sage: #a9b79e; --sage-soft: #2b302a;
     --ok: #a9b79e; --warn: #d6b885; --bad: #d39582; --p: #d39582; --c: #d6b885; --f: #a9b79e;
     --lola: #d3a596; --barnabe: #a7b59c;
+    --plate: #eee6da; --plate-rim: #d6c9b8; --plate-well: #e6ddd0; --plate-shadow: rgba(0, 0, 0, .3);
     --shadow: 0 8px 24px rgba(0, 0, 0, .25); --shadow-lift: 0 14px 32px rgba(0, 0, 0, .35);
   }
 }
@@ -51,6 +53,7 @@
   --accent: #d8c3ae; --accent-strong: #eadccb; --accent-soft: #332c26; --sage: #a9b79e; --sage-soft: #2b302a;
   --ok: #a9b79e; --warn: #d6b885; --bad: #d39582; --p: #d39582; --c: #d6b885; --f: #a9b79e;
   --lola: #d3a596; --barnabe: #a7b59c;
+  --plate: #eee6da; --plate-rim: #d6c9b8; --plate-well: #e6ddd0; --plate-shadow: rgba(0, 0, 0, .3);
   --shadow: 0 8px 24px rgba(0, 0, 0, .25); --shadow-lift: 0 14px 32px rgba(0, 0, 0, .35);
 }
 
@@ -691,3 +694,13 @@ html.cooking, html.cooking body { overflow: hidden; }
 #cook-next { background: var(--accent); color: var(--surface); }
 #cook-next:hover { background: var(--accent-strong); }
 @media print { .cook, .cook-btn { display: none !important; } }
+
+/* ---------- Assiettes dessinées (plates.js) */
+.plate { display: block; width: 100%; height: auto; }
+.meal details summary { display: flex; align-items: center; gap: 12px; }
+.meal details summary .sum-plate { flex: none; width: 54px; }
+.meal details summary .sum-title { flex: 1; min-width: 0; }
+.recipe-card { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 0 14px; align-items: start; }
+.rc-plate { padding-top: 2px; }
+.cook-plate { width: min(46vw, 170px); margin: 0 auto 14px; }
+.cook-end .cook-plate { margin-bottom: 4px; }
