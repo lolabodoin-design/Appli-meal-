@@ -21,6 +21,8 @@
 function leclercStockCheck() {
   'use strict';
   var DELAY_MS = 3000;
+  var PREPARED = ['poelee', 'gnocchi', 'gnocchis', 'pizza', 'pizzas', 'plat', 'cuisine', 'cuisinee', 'sauce', 'tarte', 'quiche', 'lasagne', 'lasagnes',
+    'ravioli', 'raviolis', 'soupe', 'veloute', 'wrap', 'sandwich', 'feuillete', 'feuilletes', 'gratin', 'tortellini', 'cannelloni', 'aperitif', 'bonbon', 'biscuit', 'biscuits'];
   var STOPWORDS = ['de', 'du', 'des', 'la', 'le', 'les', 'd', 'l', 'a', 'au', 'aux', 'et', 'en', 'un', 'une', 'pour'];
 
   if (document.getElementById('mp-stock-host')) return;
@@ -102,7 +104,17 @@ function leclercStockCheck() {
     var scored = products.map(function (p) {
       var label = norm(p.nom);
       var hits = terms.filter(function (w) { return label.indexOf(w) >= 0; }).length;
-      return { p: p, s: terms.length ? hits / terms.length : 0 };
+      var s = terms.length ? hits / terms.length : 0;
+      // Un plat préparé (poêlée, pizza, sauce…) n'est pas l'ingrédient recherché
+      var lw = label.split(' ');
+      if (PREPARED.some(function (w) { return lw.indexOf(w) >= 0 && terms.indexOf(w) < 0; })) s = 0;
+      // Bonus si l'ingrédient est le sujet du produit : en tête du nom (+0,5) ou juste après (+0,3)
+      var head = words(p.nom);
+      if (s && terms.length) {
+        if (head[0] && head[0].indexOf(terms[0]) === 0) s += 0.5;
+        else if (head.slice(1, 3).some(function (w) { return w.indexOf(terms[0]) === 0; })) s += 0.3;
+      }
+      return { p: p, s: s };
     }).filter(function (x) { return x.s >= 0.5; });
 
     var inStock = scored.filter(function (x) { return x.p.stock > 0; });
@@ -274,6 +286,7 @@ function leclercStockCheck() {
 
   function showResults(articles, results, msg, fill) {
     var total = 0, ok = 0, ko = 0, added = 0;
+    var left = articles.filter(function (a) { return !results[a.id]; }).length;
     var rows = articles.filter(function (a) { return results[a.id]; }).map(function (a) {
       var r = results[a.id];
       if (r.statut === 'ok') {
@@ -295,6 +308,7 @@ function leclercStockCheck() {
     body.innerHTML = (msg ? '<p class="warn">' + esc(msg) + '</p>' : '')
       + (fill ? '<p class="ok"><b>' + added + '</b> produit' + (added > 1 ? 's' : '') + ' ajouté' + (added > 1 ? 's' : '') + ' à ton panier. Recharge la page du Drive pour le voir, vérifie-le, puis valide ta commande.</p>' : '')
       + '<p><b>' + ok + '</b> produits en stock · <b>' + ko + '</b> à remplacer</p>'
+      + (left ? '<p class="muted"><b>' + left + '</b> produit' + (left > 1 ? 's' : '') + ' pas encore traité' + (left > 1 ? 's' : '') + '. Relance un peu plus tard : ce qui est déjà dans ton panier ne sera pas ajouté deux fois.</p>' : '')
       + '<div class="tot">Total estimé : ' + euros(total) + '</div>'
       + '<button class="go" id="copy">Copier le résultat pour l\'appli</button><button class="ghost" id="again">Recommencer</button>'
       + '<table><tr><th></th><th>Ingrédient</th><th>Produit du Drive (en stock, le moins cher au kilo)</th><th class="r">Prix</th></tr>' + rows + '</table>'
