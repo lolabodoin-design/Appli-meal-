@@ -55,7 +55,7 @@ L'appli est organisée en **4 pages**, accessibles par une barre de navigation e
 
 Thème « clean » inspiré d'un mood board (noix de coco, bowl en bois, peignoir en lin) :
 - **Couleurs** : ivoire `#F8F4EE`, blanc coco `#FFFDFA`, lin `#F2ECE3`, bois de noyer `#6B5444` (couleur principale), sauge `#8FA382` (touche « healthy ») ; mode sombre espresso et sable.
-- **Typographie** : Cormorant Garamond pour les titres, DM Sans pour le texte.
+- **Typographie** : DM Serif Display pour les titres (serif chic et très lisible, chiffres nets), DM Sans pour le texte.
 - **Logo** : un bol dessiné au trait fin, d'où sortent deux feuilles (`icons/logo.svg`).
 - Interface sans emojis (sauf 💧 pour l'hydratation), lignes fines, beaucoup d'espace, ombres très légères.
 
@@ -68,7 +68,7 @@ Thème « clean » inspiré d'un mood board (noix de coco, bowl en bois, peignoi
 | `data.js` | Base de données : 70 ingrédients (valeurs pour 100 g), 128 recettes (27 petits-déjeuners, 78 plats, 23 collations et desserts protéinés ; au moins 12 choix par type de repas pour chaque régime) et les étiquettes du quiz |
 | `drive-stock.js` | Favori « Stock Drive » : vérifie le stock réel du magasin Leclerc Drive |
 | `manifest.json`, `service-worker.js`, `icons/` (logo « bol au trait fin ») | Appli installable (PWA) : nom, icône, mode hors connexion, mises à jour |
-| `fonts.css`, `fonts/` | Polices Cormorant Garamond (titres) et DM Sans (texte) en local (licence OFL) pour le mode hors connexion |
+| `fonts.css`, `fonts/` | Polices DM Serif Display (titres) et DM Sans (texte) en local (licence OFL) pour le mode hors connexion |
 | `app.js` | Logique : calcul des besoins, optimisation, Open Food Facts, affichage, liste de courses |
 
 ## Algorithme de planification

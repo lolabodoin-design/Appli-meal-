@@ -5,7 +5,7 @@
    - Sans internet (ou réseau trop lent), on sert la copie de secours.
    - VERSION : à changer à chaque mise à jour, pour renouveler la copie de secours.
    ============================================================ */
-const VERSION = 'v3.2.1';
+const VERSION = 'v3.3.0';
 const CACHE = `menu-proteine-${VERSION}`;
 
 const FILES = [
@@ -21,10 +21,10 @@ const FILES = [
   'icons/icon-512.png',
   'icons/apple-touch-icon.png',
   'icons/logo.svg',
-  'fonts/cormorant-garamond-latin.woff2',
-  'fonts/cormorant-garamond-latin-ext.woff2',
-  'fonts/cormorant-garamond-italic-latin.woff2',
-  'fonts/cormorant-garamond-italic-latin-ext.woff2',
+  'fonts/dm-serif-display-latin.woff2',
+  'fonts/dm-serif-display-latin-ext.woff2',
+  'fonts/dm-serif-display-italic-latin.woff2',
+  'fonts/dm-serif-display-italic-latin-ext.woff2',
   'fonts/dm-sans-latin.woff2',
   'fonts/dm-sans-latin-ext.woff2',
 ];
