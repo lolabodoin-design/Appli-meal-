@@ -52,6 +52,9 @@
       </div>
 
       <div id="week-summary" class="card summary" hidden></div>
+      <div class="share-row" id="share-row" hidden>
+        <button type="button" id="btn-share" class="secondary">Partager le menu en image</button>
+      </div>
       <div id="week" class="week-grid"></div>
     </section>
 
@@ -179,6 +182,22 @@
   </nav>
 
   <!-- ============ Guide « Remplir mon panier » en cartes ============ -->
+  <!-- Partage du menu en image (share.js) -->
+  <div id="share-sheet" class="sheet" hidden>
+    <div class="sheet-panel share-panel" role="dialog" aria-modal="true" aria-labelledby="share-title">
+      <div class="sheet-head">
+        <h2 id="share-title">Partager le menu</h2>
+        <button type="button" class="sheet-close" id="btn-share-close" aria-label="Fermer">✕</button>
+      </div>
+      <p class="hint" id="share-status" aria-live="polite"></p>
+      <img id="share-preview" class="share-preview" alt="Aperçu de l'image du menu de la semaine">
+      <div class="share-actions">
+        <button type="button" id="btn-share-go" class="primary">Partager</button>
+        <a id="share-dl" class="secondary btn-link" download="menu-de-la-semaine.png">Enregistrer l'image</a>
+      </div>
+    </div>
+  </div>
+
   <!-- Mode cuisine pas à pas (cook.js) -->
   <div id="cook" class="cook" role="dialog" aria-modal="true" aria-labelledby="cook-title" hidden>
     <div class="cook-head">
@@ -272,5 +291,6 @@
   <script src="plates.js"></script>
   <script src="app.js"></script>
   <script src="cook.js"></script>
+  <script src="share.js"></script>
 </body>
 </html>

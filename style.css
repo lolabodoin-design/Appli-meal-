@@ -704,3 +704,34 @@ html.cooking, html.cooking body { overflow: hidden; }
 .rc-plate { padding-top: 2px; }
 .cook-plate { width: min(46vw, 170px); margin: 0 auto 14px; }
 .cook-end .cook-plate { margin-bottom: 4px; }
+
+/* ---------- Partage du menu en image (share.js) */
+.share-row { display: flex; justify-content: center; margin: -4px 0 16px; }
+.share-row[hidden] { display: none; }
+.share-panel { max-width: 480px; }
+.share-preview { display: block; width: auto; max-width: 100%; max-height: 58vh; margin: 0 auto 16px; border-radius: 14px; box-shadow: var(--shadow-lift); background: var(--surface-2); aspect-ratio: 9 / 16; }
+.share-preview:not([src]) { width: 40%; }
+.share-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.btn-link { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 15px 28px; text-decoration: none; font-weight: 500; color: var(--text); }
+.btn-link.primary { color: var(--surface); }
+.share-actions [hidden] { display: none; }
+
+/* ---------- Encart « De saison » illustré */
+.season-card { background: color-mix(in srgb, var(--sage) 9%, var(--surface)); border: 1px solid color-mix(in srgb, var(--sage) 22%, var(--border));
+  border-radius: var(--radius); padding: 16px 0 14px; margin: 0 0 18px; overflow: hidden; }
+.season-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 8px 10px; padding: 0 16px 12px; }
+.season-kicker { font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--sage); font-weight: 600; }
+.season-head h3 { font-family: var(--font-title); font-weight: 400; font-size: 1.35rem; color: var(--accent-strong); margin: 0; }
+.season-head .chip-btn { flex: none; }
+.season-row { display: flex; gap: 12px; overflow-x: auto; padding: 2px 16px 4px; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.season-row::-webkit-scrollbar { display: none; }
+.season-item { flex: none; width: 74px; display: flex; flex-direction: column; align-items: center; gap: 6px; scroll-snap-align: start; text-align: center; }
+.season-pic { width: 66px; height: 66px; border-radius: 50%; display: grid; place-items: center; }
+.season-pic .produce { width: 48px; height: 48px; transition: transform .25s ease; }
+.season-item:hover .produce { transform: rotate(-8deg) scale(1.06); }
+.season-name { font-size: .72rem; line-height: 1.2; color: var(--text); }
+.tint-sage { background: color-mix(in srgb, #8fa382 22%, var(--surface)); }
+.tint-peach { background: color-mix(in srgb, #e9a27a 22%, var(--surface)); }
+.tint-butter { background: color-mix(in srgb, #e8cf6e 24%, var(--surface)); }
+.tint-rose { background: color-mix(in srgb, #d98c94 20%, var(--surface)); }
+@media (prefers-reduced-motion: reduce) { .season-item:hover .produce { transform: none; } }

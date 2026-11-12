@@ -1242,6 +1242,27 @@ const seasonalNow = () => Object.values(INGREDIENTS)
   .map(ing => ing.name.toLowerCase())
   .join(', ');
 
+// Encart « De saison » : les fruits et légumes du mois, dessinés, qui défilent
+const SEASON_TINTS = ['sage', 'peach', 'butter', 'rose'];
+function seasonCard() {
+  const items = Object.entries(INGREDIENTS).filter(([, ing]) => ing.saison?.includes(currentMonth));
+  if (!items.length) return '';
+  return `
+    <div class="season-card">
+      <div class="season-head">
+        <div><span class="season-kicker">De saison</span><h3>En ${MONTHS[currentMonth - 1]}</h3></div>
+        <button type="button" class="chip-btn" data-season-go>Recettes de saison →</button>
+      </div>
+      <div class="season-row">
+        ${items.map(([id, ing], i) => `
+          <div class="season-item">
+            <span class="season-pic tint-${SEASON_TINTS[i % SEASON_TINTS.length]}">${produceIcon(id)}</span>
+            <span class="season-name">${esc(ing.name.replace(/\s*\(.*\)/, ''))}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
 // Info du jour : change chaque jour, ou au clic sur ↻
 const FACT_LIST = Object.values(FACTS);
 let factIndex = Math.floor(Date.now() / 864e5) % FACT_LIST.length;
@@ -1292,7 +1313,7 @@ function renderWeek() {
       <p><b>Le savais-tu ?</b> ${esc(currentFact())}</p>
       <button type="button" class="chip-btn" id="btn-fact" title="Une autre info">↻</button>
     </div>
-    <p class="season-line">En ${MONTHS[currentMonth - 1]}, c'est la saison de : ${esc(seasonalNow())}.</p>
+    ${seasonCard()}
     <details class="week-stats" id="week-stats">
       <summary>
         <span class="ws-title">Bilan de la semaine</span>
@@ -1444,6 +1465,7 @@ function render() {
   const has = Boolean(state.plan);
   $('#welcome').hidden = has;
   $('#week-summary').hidden = !has;
+  $('#share-row').hidden = !has;
   $('#courses-empty').hidden = has;
   $('#courses-content').hidden = !has;
   $('#btn-generate').textContent = has ? 'Régénérer la semaine' : 'Générer notre menu';
@@ -1827,6 +1849,12 @@ function bindEvents() {
 
   // Délégation : boutons « changer » et « journée »
   $('#week-summary').addEventListener('click', e => {
+    if (e.target.closest('[data-season-go]')) {
+      catalogFilter = 'saison';
+      renderCatalog();
+      showPage('recettes');
+      return;
+    }
     if (!e.target.closest('#btn-fact')) return;
     factIndex = (factIndex + 1 + Math.floor(Math.random() * (FACT_LIST.length - 1))) % FACT_LIST.length;
     $('.fact-card p').innerHTML = `<b>Le savais-tu ?</b> ${esc(currentFact())}`;

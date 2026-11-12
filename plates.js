@@ -324,5 +324,63 @@
     return svg;
   }
 
+  // ---------- Fruits & légumes de saison : petites illustrations entières (48 × 48)
+  const SW = 'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"';
+  const leafAt = (x, y, a, c = '#8fae6a', d = '#5f7d45') =>
+    `<path d="M0 0 C3 -5 9 -6 12 -4 C9 0 4 2 0 0Z" fill="${c}" stroke="${d}" ${SW} transform="translate(${x} ${y}) rotate(${a})"/>`;
+  const PRODUCE = {
+    poireau: `<path d="M21 24 C18 15 13 9 8 6 C14 7 20 12 24 20 C27 12 32 6 40 4 C35 9 30 15 27 24Z" fill="#8fae6a" stroke="#5f7d45" ${SW}/>
+      <rect x="20" y="22" width="8" height="19" rx="4" fill="#f4f1e2" stroke="#b5ae86" ${SW}/>
+      <path d="M21 42 l-2 3 M24 42 v3.5 M27 42 l2 3" stroke="#b5ae86" ${SW} fill="none"/>`,
+    butternut: `<path d="M24 9 C29 9 30 15 29.5 20 C37 23 40 33 35 39.5 C31 44 17 44 13 39.5 C8 33 11 23 18.5 20 C18 15 19 9 24 9Z" fill="#f0b66c" stroke="#c98b40" ${SW}/>
+      <path d="M24 9 V5" stroke="#7d6040" stroke-width="2.6" stroke-linecap="round"/><circle cx="24" cy="34" r="3.2" fill="#e49a48" opacity=".6"/>`,
+    choufleur: `${leafAt(8, 34, -20)}${leafAt(40, 34, 200)}
+      <g fill="#f6f0dc" stroke="#cfc29c" ${SW}><circle cx="17" cy="24" r="7"/><circle cx="31" cy="24" r="7"/><circle cx="24" cy="18" r="7.5"/><circle cx="24" cy="29" r="8"/></g>
+      <path d="M16 36 C20 41 28 41 32 36" fill="#a8c381" stroke="#6f8f4f" ${SW}/>`,
+    kiwi: `<circle cx="24" cy="24" r="16" fill="#9b7b55" stroke="#73583a" ${SW}/><circle cx="24" cy="24" r="13.4" fill="#a9c96a"/>
+      <circle cx="24" cy="24" r="4.5" fill="#f2f0d5"/>
+      <g fill="#3d3328">${Array.from({ length: 12 }, (_, i) => { const a = (i / 12) * Math.PI * 2; return `<ellipse cx="${f(24 + Math.cos(a) * 7.5)}" cy="${f(24 + Math.sin(a) * 7.5)}" rx="1" ry=".6" transform="rotate(${f((a * 180) / Math.PI)} ${f(24 + Math.cos(a) * 7.5)} ${f(24 + Math.sin(a) * 7.5)})"/>`; }).join('')}</g>`,
+    poire: `<path d="M24 12 C28 12 28.5 18 29 21 C35 25 37 33 33.5 38.5 C30 43.5 18 43.5 14.5 38.5 C11 33 13 25 19 21 C19.5 18 20 12 24 12Z" fill="#e2e08c" stroke="#a9a65a" ${SW}/>
+      <path d="M24 12 C24 9 25 7 26 5.5" stroke="#7d6040" ${SW} fill="none"/>${leafAt(25.5, 8, -25)}`,
+    brocoli: `<path d="M21 28 L19 42 H29 L27 28Z" fill="#b9d08f" stroke="#7d9a5a" ${SW}/>
+      <g fill="#6f9258" stroke="#4f7044" ${SW}><circle cx="15" cy="22" r="6.5"/><circle cx="33" cy="22" r="6.5"/><circle cx="24" cy="15" r="7.5"/><circle cx="24" cy="25" r="6.5"/></g>`,
+    epinards: `<path d="M10 38 C8 24 16 10 30 8 C32 22 24 34 10 38Z" fill="#6f915f" stroke="#4f7044" ${SW}/><path d="M11 37 C16 28 22 19 29 10" stroke="#a9c48f" ${SW} fill="none"/>
+      <path d="M20 42 C22 30 30 22 41 22 C40 33 32 41 20 42Z" fill="#87a86f" stroke="#57794a" ${SW}/><path d="M21 41 C27 34 33 28 40 23" stroke="#b9d3a0" ${SW} fill="none"/>`,
+    patatedouce: `<path d="M8 30 C6 22 16 13 28 12 C38 11 43 17 40 24 C37 31 26 36 17 36 C12 36 9 34 8 30Z" fill="#cf7a5e" stroke="#9c5340" ${SW}/>
+      <path d="M40 22 l4 -2 M8 30 l-4 2" stroke="#9c5340" ${SW}/><g fill="#a65b45"><circle cx="18" cy="24" r=".9"/><circle cx="27" cy="20" r=".9"/><circle cx="31" cy="28" r=".9"/></g>`,
+    avocat: `<path d="M24 6 C30 6 32 14 33 19 C38 24 39 33 35 38.5 C31.5 43.5 16.5 43.5 13 38.5 C9 33 10 24 15 19 C16 14 18 6 24 6Z" fill="#55703a" stroke="#3f5a2b" ${SW}/>
+      <path d="M24 9 C28.5 9 30 15 30.5 20 C35 24 35.5 32 32.5 36.5 C29.5 40.5 18.5 40.5 15.5 36.5 C12.5 32 13 24 17.5 20 C18 15 19.5 9 24 9Z" fill="#d6dc95"/>
+      <circle cx="24" cy="30" r="6" fill="#9a6a45" stroke="#764e30" ${SW}/>`,
+    pomme: `<path d="M24 16 C18 11 9 14 9 24 C9 34 16 42 21 41 C23 40.5 25 40.5 27 41 C32 42 39 34 39 24 C39 14 30 11 24 16Z" fill="#e17f6c" stroke="#b5574a" ${SW}/>
+      <path d="M24 16 C24 12 25 9 27 7" stroke="#7d6040" ${SW} fill="none"/>${leafAt(26, 10, -15)}<ellipse cx="16" cy="22" rx="2.2" ry="3.4" fill="#fff" opacity=".35"/>`,
+    citron: `<path d="M7 26 C8 18 15 12 24 12 C33 12 40 18 41 26 C40 34 33 39 24 39 C15 39 8 34 7 26Z" fill="#f3df7c" stroke="#cdb345" ${SW}/>
+      <path d="M7 26 l-3 0 M41 26 l3 0" stroke="#cdb345" ${SW}/>${leafAt(24, 12, -60)}<ellipse cx="17" cy="21" rx="3" ry="1.8" fill="#fff" opacity=".4"/>`,
+    aubergine: `<path d="M18 14 C26 12 34 18 38 28 C41 36 36 43 29 41 C22 39 15 32 13 24 C12 19 14 15 18 14Z" fill="#6e5584" stroke="#4f3b63" ${SW}/>
+      <path d="M12 9 C14 13 17 15 20 15 C19 12 16 9 12 9Z M18 14 C15 17 15 20 17 22 C19 19 21 17 23 16Z" fill="#8fae6a" stroke="#5f7d45" ${SW}/>
+      <ellipse cx="25" cy="24" rx="2" ry="4.5" fill="#fff" opacity=".25" transform="rotate(-40 25 24)"/>`,
+    radis: `${leafAt(24, 18, -110)}${leafAt(24, 18, -70)}<circle cx="24" cy="28" r="10" fill="#e07b8c" stroke="#b5566a" ${SW}/>
+      <path d="M24 38 C24 41 25 43 27 45" stroke="#b5566a" ${SW} fill="none"/><ellipse cx="20" cy="25" rx="2" ry="3" fill="#fff" opacity=".4"/>`,
+    orange: `<circle cx="24" cy="26" r="15" fill="#f2a64e" stroke="#c9822e" ${SW}/>${leafAt(24, 11, -50)}
+      <g fill="#d98a35" opacity=".55"><circle cx="18" cy="24" r=".8"/><circle cx="28" cy="20" r=".8"/><circle cx="30" cy="31" r=".8"/><circle cx="20" cy="33" r=".8"/></g>
+      <ellipse cx="18" cy="20" rx="3" ry="2" fill="#fff" opacity=".35"/>`,
+    fraises: `<path d="M24 42 C15 36 10 28 11 21 C12 16 17 14 24 15 C31 14 36 16 37 21 C38 28 33 36 24 42Z" fill="#df625f" stroke="#b34445" ${SW}/>
+      <path d="M15 15 C18 10 21 13 24 11 C27 13 30 10 33 15 C29 17 19 17 15 15Z" fill="#7fa45a" stroke="#58793f" ${SW}/>
+      <g fill="#f6dc8a">${[[18, 22], [24, 21], [30, 22], [20, 28], [27, 28], [23, 34], [16, 26], [32, 27]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx=".7" ry="1.1"/>`).join('')}</g>`,
+    courgette: `<path d="M9 34 C8 30 12 27 17 24 L33 12 C36 10 40 12 39 16 C38 19 36 21 33 23 L18 35 C14 38 10 38 9 34Z" fill="#6f9152" stroke="#4f7038" ${SW}/>
+      <path d="M14 30 L33 15 M16 33 L35 18" stroke="#9cbb7c" stroke-width="1" opacity=".7"/><path d="M38 13 l3 -3" stroke="#7d6040" stroke-width="2.4" stroke-linecap="round"/>`,
+    poivron: `<path d="M24 14 C17 12 10 16 10 25 C10 34 15 41 20 41 C22 41 23 40 24 39 C25 40 26 41 28 41 C33 41 38 34 38 25 C38 16 31 12 24 14Z" fill="#dd6450" stroke="#b1473a" ${SW}/>
+      <path d="M24 14 V8 C24 6 26 5 28 6" stroke="#5f7d45" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M24 16 V36" stroke="#b1473a" stroke-width="1" opacity=".5"/>
+      <ellipse cx="17" cy="23" rx="2" ry="4.5" fill="#fff" opacity=".3"/>`,
+    tomate: `<circle cx="24" cy="27" r="14" fill="#e06b53" stroke="#b44c3a" ${SW}/>
+      <path d="M24 13 L26 17 L31 15.5 L28.5 19.5 L32 22 L27 21.5 L24 24 L21 21.5 L16 22 L19.5 19.5 L17 15.5 L22 17Z" fill="#7fa45a" stroke="#58793f" ${SW}/>
+      <ellipse cx="17" cy="27" rx="2.4" ry="3.6" fill="#fff" opacity=".35"/>`,
+    concombre: `<rect x="6" y="18" width="36" height="13" rx="6.5" fill="#6f9152" stroke="#4f7038" ${SW} transform="rotate(-25 24 24.5)"/>
+      <path d="M12 30 L36 19" stroke="#a9c48f" stroke-width="1.2" stroke-dasharray="3 3" stroke-linecap="round"/>`,
+  };
+  function produceIcon(id) {
+    return PRODUCE[id] ? `<svg class="produce" viewBox="0 0 48 48" aria-hidden="true" focusable="false">${PRODUCE[id]}</svg>` : '';
+  }
+
   window.plateSVG = plateSVG;
+  window.produceIcon = produceIcon;
 })();

@@ -141,3 +141,11 @@ Chaque recette a un visuel d'assiette (ou de bol) vu du dessus, dessiné en SVG 
 une forme et deux couleurs douces par ingrédient (filet, grains, feuilles, rondelles, dés…), des parts proportionnelles
 aux quantités, et une disposition tirée au hasard mais toujours identique pour une recette (graine = identifiant).
 Aucune image à télécharger : léger, hors connexion, cohérent avec le logo et le thème clair/sombre.
+
+## Partager le menu (`share.js`) et encart « De saison »
+
+- Bouton « Partager le menu en image » sous le bilan de la semaine : image 1080 × 1920 (format story)
+  dessinée sur un canvas avec les assiettes, puis partage natif (iPhone : Messages, WhatsApp, Instagram…)
+  ou téléchargement sur ordinateur.
+- Encart « De saison » : les fruits et légumes du mois dessinés (`produceIcon` dans plates.js),
+  en bandeau qui défile, avec un raccourci vers les recettes de saison.
