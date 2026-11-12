@@ -1317,7 +1317,7 @@ function renderWeek() {
     <details class="week-stats" id="week-stats">
       <summary>
         <span class="ws-title">Bilan de la semaine</span>
-        <span class="ws-line">${euros(cost)}${cap ? ` / ${cap} €` : ''} · ${activePeople().map(p => `${esc(p.name)} ${Math.round((avgOf(p).kcal / targetsOf(p).kcal) * 100)} %`).join(' · ')}</span>
+        <span class="ws-line">${euros(cost)}${cap ? ` / ${cap} €` : ''} · calories couvertes : ${activePeople().map(p => `${esc(p.name)} ${Math.round((avgOf(p).kcal / targetsOf(p).kcal) * 100)} %`).join(' · ')}</span>
       </summary>
       ${budgetHtml}
       ${activePeople().map(p => `<div class="summary-row">${who(p)}<div class="summary-bars">${macroBars(avgOf(p), p.targets)}</div></div>`).join('')}
