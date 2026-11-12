@@ -1,12 +1,11 @@
 /* ============================================================
    Service worker : rend l'appli utilisable hors connexion.
-   - À l'installation, on met en cache tous les fichiers de l'appli.
-   - Ensuite, l'appli est servie depuis ce cache (instantané, même sans réseau).
-   - À CHAQUE MISE À JOUR DE L'APPLI, IL FAUT CHANGER « VERSION » CI-DESSOUS :
-     le navigateur détecte alors le nouveau service worker, l'appli affiche
-     « Nouvelle version disponible » et recharge les nouveaux fichiers.
+   - « Réseau d'abord » : avec internet, on charge toujours la dernière version
+     publiée (et on met la copie de secours à jour au passage).
+   - Sans internet (ou réseau trop lent), on sert la copie de secours.
+   - VERSION : à changer à chaque mise à jour, pour renouveler la copie de secours.
    ============================================================ */
-const VERSION = 'v3.0.1';
+const VERSION = 'v3.1.0';
 const CACHE = `menu-proteine-${VERSION}`;
 
 const FILES = [
@@ -30,13 +29,16 @@ const FILES = [
   'fonts/dm-sans-latin-ext.woff2',
 ];
 
+// Délai au-delà duquel on se rabat sur la copie de secours (réseau très lent en magasin)
+const NETWORK_TIMEOUT = 4000;
+
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)));
-  // On n'active pas tout de suite : l'appli propose d'abord la mise à jour
+  self.skipWaiting(); // la nouvelle version prend la main tout de suite, sans attendre
 });
 
 self.addEventListener('activate', event => {
-  // Supprime les caches des anciennes versions
+  // Supprime les copies des anciennes versions
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
@@ -44,20 +46,33 @@ self.addEventListener('activate', event => {
   );
 });
 
-// L'appli demande à passer à la nouvelle version (bouton « Mettre à jour »)
+// Compatibilité avec les anciennes versions de l'appli (bouton « Mettre à jour »)
 self.addEventListener('message', event => {
   if (event.data === 'skipWaiting') self.skipWaiting();
 });
 
+function fromNetwork(request) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('lent')), NETWORK_TIMEOUT);
+    fetch(request, { cache: 'no-cache' }).then(response => {
+      clearTimeout(timer);
+      if (response.ok) {
+        const copy = response.clone();
+        caches.open(CACHE).then(cache => cache.put(request, copy));
+      }
+      resolve(response);
+    }, err => { clearTimeout(timer); reject(err); });
+  });
+}
+
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
-  // Seuls les fichiers de l'appli passent par le cache ; les API (Open Food Facts…) restent en ligne
+  // Seuls les fichiers de l'appli passent ici ; les API (Open Food Facts…) restent en direct
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
   event.respondWith(
-    caches.match(request, { ignoreSearch: true })
-      .then(cached => cached || fetch(request))
-      .catch(() => caches.match('index.html')),
+    fromNetwork(request).catch(() =>
+      caches.match(request, { ignoreSearch: true }).then(cached => cached || caches.match('index.html'))),
   );
 });
 

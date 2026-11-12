@@ -2020,16 +2020,18 @@ function registerServiceWorker() {
       $('#update-status').textContent = 'Vérification…';
       try { await reg.update(); } catch { /* hors connexion */ }
       setTimeout(() => {
-        $('#update-status').textContent = reg.waiting || reg.installing ? 'Nouvelle version trouvée : touchez « Mettre à jour » en bas.' : 'Vous avez la dernière version.';
+        $('#update-status').textContent = reg.waiting || reg.installing ? 'Nouvelle version trouvée : installation…' : 'Vous avez la dernière version.';
       }, 1500);
     };
   }).catch(() => { /* pas de mode hors connexion, l'appli fonctionne quand même */ });
 
-  // On ne recharge que si l'utilisateur a demandé la mise à jour
-  // (pas lors de la toute première installation)
+  // Une nouvelle version vient de prendre la main : on recharge pour l'afficher
+  // (pas lors de la toute première installation, où il n'y avait pas d'ancienne version)
+  const hadController = Boolean(navigator.serviceWorker.controller);
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!updateRequested) return;
+    if (!hadController && !updateRequested) return;
     updateRequested = false;
+    if (!$('#quiz-sheet').hidden) return; // on ne coupe pas le quiz en plein milieu
     location.reload();
   });
 }
