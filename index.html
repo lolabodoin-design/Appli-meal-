@@ -73,22 +73,24 @@
               <span><b>Remplir le panier Leclerc Drive</b><br><small>Depuis l'ordinateur : le favori vérifie le stock réel, choisit les produits et remplit ton panier en une fois.</small></span>
             </summary>
             <ol class="stock-steps">
-              <li><b>Une seule fois :</b> glisse ce bouton dans ta barre de favoris →
-                <a id="bm-link" class="bookmarklet" href="#">Stock Drive</a>
-                <small>(barre de favoris invisible ? <kbd>Ctrl/⌘ + Maj + B</kbd>)</small></li>
-              <li class="iphone-only-hint"><small>Sur iPhone : <button type="button" id="btn-copy-bm" class="chip-btn">Copier le favori pour iPhone</button>, puis suis les étapes qui s'affichent.</small>
+              <li><b>Une seule fois :</b> installer le favori « Stock Drive ».
+                <br><small>Sur ordinateur : glisse ce bouton dans ta barre de favoris → <a id="bm-link" class="bookmarklet" href="#">Stock Drive</a> (barre invisible ? <kbd>⌘ + Maj + B</kbd>)</small>
+                <br><small>Sur iPhone : <button type="button" id="btn-copy-bm" class="chip-btn">Copier le favori pour iPhone</button> puis suis les étapes qui s'affichent.</small>
                 <div id="bm-iphone-steps" class="hint" hidden>
-                  <b>Installer le favori dans Safari (iPhone), une seule fois :</b>
+                  <b>Installer le favori dans Safari (iPhone) :</b>
                   <ol>
                     <li>Dans Safari, ouvre n'importe quelle page, touche <b>Partager</b> → <b>Ajouter un signet</b> → nomme-le <b>Stock Drive</b> → Enregistrer.</li>
-                    <li>Touche l'icône <b>Signets</b> (le livre) → <b>Modifier</b> → touche <b>Stock Drive</b>.</li>
-                    <li>Efface l'adresse, fais un appui long → <b>Coller</b> (le code copié commence par « javascript: »), puis <b>OK</b>.</li>
-                    <li>Sur le site Leclerc Drive (dans Safari, connectée), touche la barre d'adresse, tape <b>Stock</b> et choisis le signet <b>Stock Drive</b> dans les suggestions.</li>
+                    <li>Touche l'icône <b>Signets</b> (le livre ouvert) → <b>Modifier</b> → touche <b>Stock Drive</b>.</li>
+                    <li>Efface l'adresse, fais un appui long → <b>Coller</b> (le code commence par « javascript: »), puis <b>OK</b>.</li>
                   </ol>
                 </div></li>
-              <li><button type="button" id="btn-copy-drive" class="secondary">Copier la liste pour le Drive</button></li>
-              <li>Ouvre <a id="drive-open" href="https://www.leclercdrive.fr/" target="_blank" rel="noopener">ton magasin Leclerc Drive</a> <b>en étant connectée à ton compte</b>, clique sur le favori <b>Stock Drive</b>, colle la liste puis <b>« Vérifier et remplir le panier »</b> (≈ 5 s par produit). La première fois, coche le <b>mode test</b> : un seul produit est ajouté, pour vérifier.</li>
-              <li>Facultatif : clique sur « Copier le résultat pour l'appli » puis colle-le ici, pour voir les prix réels et adapter le menu aux ruptures :
+              <li><button type="button" id="btn-open-drive" class="primary small">Ouvrir Leclerc avec ma liste</button>
+                <br><small>Le Drive s'ouvre avec ta liste. Connecte-toi à ton compte si besoin.</small></li>
+              <li>Lance le favori <b>Stock Drive</b> :
+                <br><small>sur ordinateur, clique dessus dans la barre de favoris ; sur iPhone, touche la barre d'adresse, tape <b>Stock</b> et choisis le signet <b>Stock Drive</b>.</small>
+                <br><small>Puis <b>« Vérifier et remplir le panier »</b>. La première fois, coche le <b>mode test</b> (un seul produit ajouté).</small></li>
+              <li><small>Si le favori ne trouve pas la liste (par exemple après t'être connectée), elle est déjà copiée : colle-la dans la case. Tu peux aussi la copier ici : <button type="button" id="btn-copy-drive" class="chip-btn">Copier la liste pour le Drive</button></small></li>
+              <li><small>Facultatif : clique sur « Copier le résultat pour l'appli » dans le favori puis colle-le ici, pour voir les prix réels et adapter le menu aux ruptures :</small>
                 <textarea id="stock-in" placeholder='{"v":1,"type":"stock-drive",…}'></textarea>
                 <button type="button" id="btn-import-stock" class="secondary">Importer le stock</button></li>
             </ol>

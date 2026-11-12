@@ -173,10 +173,23 @@ function leclercStockCheck() {
   root.querySelector('.x').onclick = close;
   root.querySelector('.bg').onclick = close;
 
+  // Liste transmise par l'appli dans l'adresse de la page (#mp=…) : pas de copier-coller à faire.
+  // Cette partie de l'adresse (après #) n'est jamais envoyée au site Leclerc.
+  var sentList = '';
+  var hashMatch = location.hash.match(/[#&]mp=([^&]+)/);
+  if (hashMatch) {
+    try { sentList = decodeURIComponent(escape(atob(decodeURIComponent(hashMatch[1])))); } catch (e) { sentList = ''; }
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+
   function showInput(msg) {
-    body.innerHTML = '<p>Colle ici la liste copiée depuis l\'appli (bouton « Copier la liste pour le Drive ») :</p>'
+    var count = 0;
+    try { count = JSON.parse(sentList).articles.length; } catch (e) { /* pas de liste transmise */ }
+    body.innerHTML = (count
+      ? '<p class="ok">Liste reçue depuis l\'appli : ' + count + ' produits ✓</p>'
+      : '<p>Colle ici la liste copiée depuis l\'appli (bouton « Copier la liste pour le Drive ») :</p>')
       + (msg ? '<p class="warn">' + esc(msg) + '</p>' : '')
-      + '<textarea id="in" placeholder=\'{"v":1,"articles":[...]}\'></textarea>'
+      + '<textarea id="in" placeholder=\'{"v":1,"articles":[...]}\'' + (count ? ' style="display:none"' : '') + '></textarea>'
       + '<label><input type="checkbox" id="test"> Mode test : n\'ajouter qu\'un seul produit au panier (pour vérifier que tout marche)</label>'
       + '<button class="go" id="fill">Vérifier et remplir le panier</button>'
       + '<button class="go2" id="run">Vérifier le stock seulement</button>'
@@ -273,4 +286,5 @@ function leclercStockCheck() {
   }
 
   showInput('');
+  if (sentList) root.getElementById('in').value = sentList;
 }

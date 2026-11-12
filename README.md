@@ -100,8 +100,8 @@ Le même robot GitHub Actions envoie chaque **dimanche à 19 h** une notificatio
 Le site Leclerc Drive n'a pas d'API publique et il est protégé par un anti-robot (DataDome). Un script extérieur (Python, GitHub Actions…) reçoit une erreur 403. En revanche, les pages de recherche d'un magasin contiennent, pour chaque produit, le **stock réel** (`iQteDisponible`), le prix, le prix au kilo et la contenance.
 
 La solution est un **favori** (bookmarklet), créé à partir de `drive-stock.js`, que l'utilisateur lance lui-même sur la page de son magasin :
-1. dans l'appli, « 📋 Copier la liste pour le Drive » copie la liste de courses au format JSON ;
-2. sur le Drive, le favori ouvre une fenêtre où l'on colle cette liste ;
+1. dans l'appli, « Ouvrir Leclerc avec ma liste » ouvre le Drive en emportant la liste dans le fragment de l'adresse (`#mp=…`, jamais envoyé au serveur) ; la liste est aussi copiée dans le presse-papiers en secours ;
+2. sur le Drive, le favori (barre de favoris sur ordinateur, signet Safari sur iPhone) récupère la liste tout seul ;
 3. pour chaque ingrédient, il charge la page de recherche du magasin (**une recherche toutes les 3 s**, dans la session de l'utilisateur), garde les produits dont le nom correspond aux mots recherchés, écarte ceux en rupture, choisit **le moins cher au kilo** et calcule le nombre de paquets à partir de la contenance ;
 4. il affiche la liste avec les prix et le total, puis on colle le résultat dans l'appli ;
 5. l'appli montre le produit, le prix et le stock sous chaque ingrédient. Le bouton « 🔁 Adapter le menu au stock » **régénère le menu sans les ingrédients en rupture**.

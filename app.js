@@ -1645,7 +1645,7 @@ function fillForms() {
   renderQuiz();
   $('#drive-url').value = state.driveUrl;
   $('#drive-status').textContent = driveStoreBase() ? 'Magasin reconnu ·' : '';
-  $('#drive-open').href = driveStoreBase() ? `${driveStoreBase()}/recherche.aspx?TexteRecherche=` : 'https://www.leclercdrive.fr/';
+
 }
 
 // ============================================================
@@ -1828,6 +1828,16 @@ function bindEvents() {
     e.preventDefault();
     bm.textContent = 'Glisse-moi dans la barre de favoris';
     setTimeout(() => { bm.textContent = 'Stock Drive'; }, 2500);
+  });
+
+  // Ouvre le Drive en emportant la liste dans l'adresse (#mp=…) : le favori la lit tout seul.
+  // Copiée aussi dans le presse-papiers, au cas où (ex. connexion au compte qui ferait perdre l'adresse).
+  $('#btn-open-drive').addEventListener('click', async () => {
+    const list = JSON.stringify(cartExport());
+    try { await navigator.clipboard.writeText(list); } catch { /* pas grave */ }
+    const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(list))));
+    const base = driveStoreBase() || DEFAULT_DRIVE_URL;
+    window.open(`${base}/recherche.aspx?TexteRecherche=#mp=${encoded}`, '_blank', 'noopener');
   });
 
   // Favori pour iPhone : on copie son code, à coller comme adresse d'un signet Safari
