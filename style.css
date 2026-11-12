@@ -466,6 +466,7 @@ body.sheet-open { overflow: hidden; }
   display: block; width: 100%; height: 70px; margin: 6px 0; border: 1px solid var(--border); border-radius: 12px;
   padding: 8px; font: .76rem ui-monospace, monospace; background: var(--surface); color: var(--text);
 }
+#bm-iphone-steps ol { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; }
 .bookmarklet {
   display: inline-block; background: var(--accent); color: var(--surface) !important; text-decoration: none;
   padding: 5px 14px; border-radius: 999px; cursor: grab; font-size: .84rem;

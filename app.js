@@ -1830,6 +1830,17 @@ function bindEvents() {
     setTimeout(() => { bm.textContent = 'Stock Drive'; }, 2500);
   });
 
+  // Favori pour iPhone : on copie son code, à coller comme adresse d'un signet Safari
+  $('#btn-copy-bm').addEventListener('click', async e => {
+    $('#bm-iphone-steps').hidden = false;
+    try {
+      await navigator.clipboard.writeText(bm.href);
+      e.target.textContent = 'Favori copié ✓';
+    } catch {
+      prompt('Copie ce code :', bm.href);
+    }
+  });
+
   $('#btn-copy-drive').addEventListener('click', async e => {
     try {
       await navigator.clipboard.writeText(JSON.stringify(cartExport()));
