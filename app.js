@@ -188,6 +188,7 @@ const DEFAULT_STATE = {
   stock: null,     // résultat du favori « Stock Drive » : { magasin, date, items: { ingrédient: {...} } }
   unavailable: [], // ingrédients en rupture au Drive, écartés à la prochaine génération
   ratings: {},     // avis du foyer sur les recettes : { idRecette: 'love' | 'dislike' }
+  fridge: {},      // « Mon frigo » : { ingrédient: 1 (il en reste) | 2 (à finir vite) }
 };
 
 const RECIPE_BY_ID = Object.fromEntries(RECIPES.map(r => [r.id, r]));
@@ -476,8 +477,28 @@ function seasonOf(recipe) {
 }
 
 // Plus une recette correspond aux envies, plus elle a de chances d'être tirée
+// ---------- Mon frigo (anti-gaspi) : les recettes qui utilisent ce qu'il reste passent devant.
+// « À finir vite » compte encore plus en début de semaine (lundi → mercredi).
+let fridgeUsed = new Set(); // restes déjà utilisés par un repas du menu en cours de calcul
+let planningDay = 0;
+function fridgeHits(r) {
+  let n1 = 0, n2 = 0;
+  for (const id of r.ingIds) {
+    const v = state.fridge?.[id];
+    if (!v || fridgeUsed.has(id)) continue;
+    if (v === 2) n2++; else n1++;
+  }
+  return { n1, n2 };
+}
+const urgentBoost = () => (planningDay <= 2 ? 12 : 3);
+function markFridgeUsed(meals) {
+  for (const m of meals) for (const rid of mealRecipeIds(m)) for (const id of RECIPE_BY_ID[rid].ingIds) if (state.fridge?.[id]) fridgeUsed.add(id);
+}
+
 function recipeWeight(r) {
   let w = 1;
+  const fh = fridgeHits(r);
+  if (fh.n1 || fh.n2) w *= 1 + 3 * fh.n1 + urgentBoost() * fh.n2;
   if (isLoved(r)) w *= 3; // les recettes aimées reviennent plus souvent
   const season = seasonOf(r);
   if (season === 'saison') w *= 1.5;
@@ -492,6 +513,7 @@ function recipeWeight(r) {
 // Bonus / malus ajoutés au score d'une journée (plus petit = meilleur)
 function preferenceScore(recipes) {
   return recipes.reduce((sum, r) => sum
+    - 0.06 * fridgeHits(r).n1 - (planningDay <= 2 ? 0.2 : 0.06) * fridgeHits(r).n2
     - (state.quiz.moods.some(m => r.flags.has(m)) ? 0.03 : 0)
     - (isLoved(r) ? 0.04 : 0)
     - (seasonOf(r) === 'saison' ? 0.02 : 0) + (seasonOf(r) === 'hors' ? 0.03 : 0)
@@ -629,6 +651,7 @@ function fromOptMeal(m, scales) {
 const mealRecipeIds = m => (m.recipeId ? [m.recipeId, ...Object.values(m.variants || {})] : []);
 
 function generateDay(d, pools, usage, families) {
+  planningDay = d;
   const skeleton = daySkeleton(d);
   const slotPools = skeleton.map(s => (s.external ? null : slotPool(d, s.slot, pools)));
   let best = null;
@@ -679,8 +702,10 @@ function generateWeek() {
   if (!canPlan(pools)) return;
   const usage = {};
   const families = { viande: 0, poisson: 0, vegetal: 0 };
+  fridgeUsed = new Set();
   state.plan = DAYS.map((_, d) => {
     const meals = generateDay(d, pools, usage, families);
+    markFridgeUsed(meals);
     for (const m of meals) {
       for (const id of mealRecipeIds(m)) usage[id] = (usage[id] || 0) + 1;
       if (m.recipeId && RECIPE_BY_ID[m.recipeId].type === 'plat') families[proteinFamily(RECIPE_BY_ID[m.recipeId])]++;
@@ -688,6 +713,8 @@ function generateWeek() {
     return { meals };
   });
   state.checked = {};
+  // Ce qu'on a déjà au frigo est coché d'office dans la liste de courses
+  for (const { id } of shoppingList()) if (state.fridge?.[id]) state.checked[id] = true;
   showNotice('');
   saveState();
   render();
@@ -696,6 +723,8 @@ function generateWeek() {
 function regenerateDay(d) {
   const pools = recipePools();
   if (!canPlan(pools)) return;
+  fridgeUsed = new Set();
+  state.plan.forEach((day, j) => { if (j !== d) markFridgeUsed(day.meals); });
   state.plan[d].meals = generateDay(d, pools, usageExcept(d), familyCounts(d));
   saveState();
   render();
@@ -1391,6 +1420,7 @@ function renderShopping() {
             <span>
               <span class="item-name">${esc(ing.name)}</span><br>
               <span class="item-qty">${esc(buyQuantity(ing, g))} · besoin : ${fmtWeight(g)}</span>
+              ${state.fridge?.[id] ? '<span class="fridge-tag">Dans ton frigo · vérifie qu\'il y en a assez</span>' : ''}
               ${product ? `<span class="item-product">${nutriBadge(product.nutriscore)} ${esc([product.brand, product.name].filter(Boolean).join(' – '))}
                 <button type="button" class="link-btn" data-off-clear="${id}" title="Retirer ce produit">✕</button></span>` : ''}
               ${stockLine(id)}

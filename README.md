@@ -149,3 +149,12 @@ Aucune image à télécharger : léger, hors connexion, cohérent avec le logo e
   ou téléchargement sur ordinateur.
 - Encart « De saison » : les fruits et légumes du mois dessinés (`produceIcon` dans plates.js),
   en bandeau qui défile, avec un raccourci vers les recettes de saison.
+
+## Anti-gaspi : page « Frigo » (`fridge.js`)
+
+- On coche ce qu'il reste à la maison (1 toucher = il en reste, 2 = à finir vite) ; huile, épices, soja, miel
+  sont considérés comme toujours au placard.
+- **Finir mes restes** : le menu de la semaine favorise les recettes qui les utilisent (une fois chacun),
+  les « à finir vite » dès lundi–mercredi ; ils sont aussi cochés d'office dans la liste de courses.
+- **Uniquement mon frigo** : cartes qui défilent avec les recettes faisables sans courses, ou à 1–2 ingrédients près,
+  chacune avec son bouton « Cuisiner pas à pas ».
