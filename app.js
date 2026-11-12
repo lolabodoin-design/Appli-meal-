@@ -2006,7 +2006,10 @@ function registerServiceWorker() {
       $('#update-banner').hidden = false;
       $('#btn-update').onclick = () => {
         updateRequested = true;
+        // Si la nouvelle version a déjà pris la main toute seule, il suffit de recharger
+        if (worker.state === 'activated' || worker.state === 'redundant') { location.reload(); return; }
         worker.postMessage('skipWaiting');
+        setTimeout(() => location.reload(), 1500); // filet de sécurité
       };
     };
     // Une nouvelle version est prête et une ancienne tourne encore : on propose la mise à jour
