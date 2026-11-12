@@ -158,15 +158,16 @@ function leclercStockCheck() {
     + 'textarea{width:100%;height:110px;border:1px solid #e6ddd0;border-radius:12px;padding:10px;font:12px monospace;background:#fffdfa}'
     + 'button{cursor:pointer;border:1px solid transparent;border-radius:999px;padding:10px 18px;font-weight:500;font-size:14px;margin:8px 8px 0 0}'
     + '.go{background:#6b5444;color:#fffdfa}.go2{background:#fffdfa;color:#6b5444;border-color:#6b5444}.ghost{background:#efe7dc;color:#3b2f27}'
-    + 'label{display:flex;gap:8px;align-items:center;font-size:13px;color:#8c7e72;margin-top:10px}'
+    + 'label{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:#8c7e72}'
+    + '.big{font:400 26px Georgia,serif;margin:14px 0 4px}.main{display:block;width:100%;padding:14px;font-size:16px;margin:14px 0 6px}.links{font-size:13px;color:#8c7e72;text-align:center}'
     + '.bar{height:4px;background:#e6ddd0;border-radius:99px;overflow:hidden;margin:10px 0}.fill{height:100%;width:0;background:#8fa382;transition:width .3s}'
     + 'table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}td,th{padding:7px 6px;border-bottom:1px solid #e6ddd0;text-align:left;vertical-align:top}'
     + 'th{font-size:12px;color:#8c7e72;font-weight:500}.r{text-align:right;white-space:nowrap}a{color:#6b5444;font-weight:500}'
     + '.tot{font:400 22px Georgia,serif;margin-top:12px}.warn{color:#b8735f;font-weight:500}.ok{color:#6f7f68;font-weight:500}.x{position:absolute;top:14px;right:18px;background:none;font-size:18px;color:#8c7e72}'
     + '</style>'
     + '<div class="bg"></div><div class="box"><button class="x" title="Fermer">✕</button>'
-    + '<h2>Le menu de la semaine · Drive</h2>'
-    + '<p class="muted">Magasin : ' + esc(storePath) + '</p><div id="body"></div></div>';
+    + '<h2>Remplir mon panier</h2>'
+    + '<p class="muted">Leclerc Drive ' + esc(storePath.replace(/^magasin-\d+-?(\d+-?)?/, '').replace(/-/g, ' ') || storeId) + '</p><div id="body"></div></div>';
   var body = root.getElementById('body');
   var stopped = false;
   function close() { stopped = true; host.remove(); }
@@ -185,22 +186,21 @@ function leclercStockCheck() {
   function showInput(msg) {
     var count = 0;
     try { count = JSON.parse(sentList).articles.length; } catch (e) { /* pas de liste transmise */ }
-    body.innerHTML = (count
-      ? '<p class="ok">Liste reçue depuis l\'appli : ' + count + ' produits ✓</p>'
-      : '<p>Colle ici la liste copiée depuis l\'appli (bouton « Copier la liste pour le Drive ») :</p>')
-      + (msg ? '<p class="warn">' + esc(msg) + '</p>' : '')
+    body.innerHTML = (msg ? '<p class="warn">' + esc(msg) + '</p>' : '')
+      + (count
+        ? '<p class="big">' + count + ' produits à ajouter</p>'
+        : '<p>Collez ici la liste copiée depuis l\'appli :</p>')
       + '<textarea id="in" placeholder=\'{"v":1,"articles":[...]}\'' + (count ? ' style="display:none"' : '') + '></textarea>'
-      + '<label><input type="checkbox" id="test"> Mode test : n\'ajouter qu\'un seul produit au panier (pour vérifier que tout marche)</label>'
-      + '<button class="go" id="fill">Vérifier et remplir le panier</button>'
-      + '<button class="go2" id="run">Vérifier le stock seulement</button>'
-      + '<p class="muted">Connecte-toi d\'abord à ton compte Leclerc. Rien n\'est jamais payé : tu valides ta commande toi-même.</p>';
+      + '<button class="go main" id="fill">Tout mettre dans le panier</button>'
+      + '<p class="muted">Le site choisit le produit en stock le moins cher au kilo. Rien n\'est payé : vous validez la commande vous-même.</p>'
+      + '<p class="links"><a href="#" id="run">Vérifier seulement le stock</a> · <label><input type="checkbox" id="test"> mode test (1 produit)</label></p>';
     function start(fill) {
       var data;
       try { data = JSON.parse(root.getElementById('in').value); } catch (e) { data = null; }
       if (!data || !data.articles || !data.articles.length) { showInput('Liste illisible : recopie-la depuis l\'appli.'); return; }
       run(data.articles, fill, fill && root.getElementById('test').checked);
     }
-    root.getElementById('run').onclick = function () { start(false); };
+    root.getElementById('run').onclick = function (e) { e.preventDefault(); start(false); };
     root.getElementById('fill').onclick = function () { start(true); };
   }
 

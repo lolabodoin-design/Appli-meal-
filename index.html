@@ -60,52 +60,46 @@
       <p class="empty card" id="courses-empty">Générez d'abord votre menu de la semaine : la liste de courses se remplira toute seule.</p>
       <div id="courses-content">
         <div class="card">
-          <div class="toolbar">
-            <button type="button" id="btn-copy" class="secondary">Copier</button>
-            <button type="button" id="btn-download" class="secondary">Télécharger</button>
-            <button type="button" id="btn-print" class="secondary">Imprimer</button>
-            <button type="button" id="btn-checkall" class="ghost">Tout cocher</button>
-            <button type="button" id="btn-uncheck" class="ghost">Tout décocher</button>
+          <!-- Comment remplir son panier : simple sur téléphone, tout d'un coup sur ordinateur -->
+          <div class="cart-help">
+            <h2>Remplir votre panier Leclerc</h2>
+            <div class="mobile-only">
+              <p>Touchez <b>Ajouter sur Leclerc</b> à côté de chaque produit, ajoutez-le à votre panier, puis cochez-le ici.</p>
+              <p class="tip-desktop">Envie de <b>tout ajouter d'un coup</b> ? Ouvrez l'appli sur un <b>ordinateur</b> : un bouton remplit tout votre panier Leclerc en une fois.</p>
+            </div>
+            <div class="desktop-only bulk">
+              <button type="button" id="btn-open-drive" class="primary">Remplir mon panier Leclerc</button>
+              <p class="hint">Le site Leclerc s'ouvre : cliquez sur <b>Stock Drive</b> dans votre barre de favoris, puis sur <b>Tout mettre dans le panier</b>. Vous validez ensuite la commande vous-même.</p>
+              <details class="mini-fold" id="first-time">
+                <summary>Première fois ? Installez le bouton « Stock Drive »</summary>
+                <p>Glissez ce bouton dans votre barre de favoris : <a id="bm-link" class="bookmarklet" href="#">Stock Drive</a>
+                  <small>(barre de favoris invisible ? <kbd>⌘ + Maj + B</kbd>)</small></p>
+              </details>
+              <details class="mini-fold">
+                <summary>Options avancées</summary>
+                <p class="hint">Prix réels : dans la fenêtre Leclerc, cliquez sur « Copier le résultat pour l'appli », puis collez-le ici. Les ruptures pourront alors être écartées du menu.</p>
+                <textarea id="stock-in" placeholder="Résultat copié depuis la fenêtre Leclerc"></textarea>
+                <button type="button" id="btn-import-stock" class="secondary">Importer les prix réels</button>
+                <button type="button" id="btn-copy-drive" class="ghost">Copier la liste pour Leclerc</button>
+              </details>
+            </div>
           </div>
-          <details class="stock-card" id="stock-card">
-            <summary>
-              <span class="stock-logo" aria-hidden="true"></span>
-              <span><b>Remplir le panier Leclerc Drive</b><br><small>Depuis l'ordinateur : le favori vérifie le stock réel, choisit les produits et remplit ton panier en une fois.</small></span>
-            </summary>
-            <ol class="stock-steps">
-              <li><b>Une seule fois :</b> installer le favori « Stock Drive ».
-                <br><small>Sur ordinateur : glisse ce bouton dans ta barre de favoris → <a id="bm-link" class="bookmarklet" href="#">Stock Drive</a> (barre invisible ? <kbd>⌘ + Maj + B</kbd>)</small>
-                <br><small>Sur iPhone : <button type="button" id="btn-copy-bm" class="chip-btn">Copier le favori pour iPhone</button> puis suis les étapes qui s'affichent.</small>
-                <div id="bm-iphone-steps" class="hint" hidden>
-                  <b>Installer le favori dans Safari (iPhone) :</b>
-                  <ol>
-                    <li>Dans Safari, ouvre n'importe quelle page, touche <b>Partager</b> → <b>Ajouter un signet</b> → nomme-le <b>Stock Drive</b> → Enregistrer.</li>
-                    <li>Touche l'icône <b>Signets</b> (le livre ouvert) → <b>Modifier</b> → touche <b>Stock Drive</b>.</li>
-                    <li>Efface l'adresse, fais un appui long → <b>Coller</b> (le code commence par « javascript: »), puis <b>OK</b>.</li>
-                  </ol>
-                </div></li>
-              <li><button type="button" id="btn-open-drive" class="primary small">Ouvrir Leclerc avec ma liste</button>
-                <br><small>Le Drive s'ouvre avec ta liste. Connecte-toi à ton compte si besoin.</small></li>
-              <li>Lance le favori <b>Stock Drive</b> :
-                <br><small>sur ordinateur, clique dessus dans la barre de favoris ; sur iPhone, touche la barre d'adresse, tape <b>Stock</b> et choisis le signet <b>Stock Drive</b>.</small>
-                <br><small>Puis <b>« Vérifier et remplir le panier »</b>. La première fois, coche le <b>mode test</b> (un seul produit ajouté).</small></li>
-              <li><small>Si le favori ne trouve pas la liste (par exemple après t'être connectée), elle est déjà copiée : colle-la dans la case. Tu peux aussi la copier ici : <button type="button" id="btn-copy-drive" class="chip-btn">Copier la liste pour le Drive</button></small></li>
-              <li><small>Facultatif : clique sur « Copier le résultat pour l'appli » dans le favori puis colle-le ici, pour voir les prix réels et adapter le menu aux ruptures :</small>
-                <textarea id="stock-in" placeholder='{"v":1,"type":"stock-drive",…}'></textarea>
-                <button type="button" id="btn-import-stock" class="secondary">Importer le stock</button></li>
-            </ol>
-            <p class="hint">Le favori agit dans <b>ta</b> session, à un rythme humain, et s'arrête si Leclerc demande une vérification anti-robot. Il ne paie jamais rien : tu valides ta commande toi-même. Après une mise à jour de l'appli, <b>remplace le favori</b> par le nouveau (glisse à nouveau le bouton) pour profiter des dernières améliorations.</p>
-          </details>
           <div id="stock-summary"></div>
           <p class="checkout" id="checkout"></p>
 
-          <div class="off-intro">
-            <span class="off-logo" aria-hidden="true"></span>
-            <div>
-              <p><b>Vrais produits avec Open Food Facts.</b> Clique sur « Produits réels » pour voir les produits les plus achetés en France, avec leur Nutri-Score, puis choisis le tien. Le lien Leclerc Drive cherchera alors ce produit précis.</p>
-              <label class="check"><input type="checkbox" id="use-real"> Utiliser les valeurs nutritionnelles des produits choisis dans le calcul des portions</label>
-            </div>
+          <div class="toolbar">
+            <button type="button" id="btn-checkall" class="ghost">Tout cocher</button>
+            <button type="button" id="btn-uncheck" class="ghost">Tout décocher</button>
+            <button type="button" id="btn-copy" class="ghost">Copier la liste</button>
+            <button type="button" id="btn-download" class="ghost desktop-only">Télécharger</button>
+            <button type="button" id="btn-print" class="ghost desktop-only">Imprimer</button>
           </div>
+
+          <details class="mini-fold off-intro desktop-only">
+            <summary>Choisir des produits précis (Open Food Facts)</summary>
+            <p>Cliquez sur « Produits réels » pour voir les produits les plus achetés en France, avec leur Nutri-Score, puis choisissez le vôtre. Le lien Leclerc cherchera alors ce produit précis.</p>
+            <label class="check"><input type="checkbox" id="use-real"> Utiliser les valeurs nutritionnelles des produits choisis dans le calcul des portions</label>
+          </details>
           <div id="shopping"></div>
         </div>
       </div>

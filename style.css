@@ -450,8 +450,25 @@ body.sheet-open { overflow: hidden; }
 .water-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 
 /* ---------- Liste de courses */
-.toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
-.off-intro { margin-top: 18px; padding: 14px 16px; border-radius: 14px; background: var(--surface-2); font-size: .86rem; }
+html.is-mobile .desktop-only { display: none !important; }
+html:not(.is-mobile) .mobile-only { display: none !important; }
+.cart-help h2 { margin-bottom: 8px; }
+.bulk { text-align: center; padding: 6px 0 2px; }
+.bulk .primary { width: min(360px, 100%); }
+.bulk > .hint { max-width: 520px; margin: 10px auto 6px; }
+.mini-fold { text-align: left; margin-top: 8px; font-size: .84rem; }
+.mini-fold > summary { cursor: pointer; color: var(--muted); list-style: none; text-align: center; text-decoration: underline; text-underline-offset: 3px; }
+.mini-fold > summary::-webkit-details-marker { display: none; }
+.mini-fold[open] { background: var(--surface-2); border-radius: 12px; padding: 10px 14px; }
+.mini-fold textarea { display: block; width: 100%; height: 60px; margin: 6px 0; border: 1px solid var(--border); border-radius: 10px; padding: 8px; font: .76rem ui-monospace, monospace; background: var(--surface); color: var(--text); }
+.cart-help p { margin: 0 0 8px; font-size: .9rem; }
+.tip-desktop { background: var(--surface-2); border-radius: 12px; padding: 10px 14px; font-size: .84rem !important; color: var(--muted); }
+.off-intro > summary { cursor: pointer; list-style: none; }
+.off-intro > summary::-webkit-details-marker { display: none; }
+.off-intro[open] > summary { margin-bottom: 8px; }
+html.is-mobile .drive-link { padding: 8px 16px; font-size: .84rem; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 18px; }
+.off-intro { margin-top: 14px; }
 .off-intro p { margin: 0 0 8px; }
 .off-logo { display: none; }
 
@@ -466,7 +483,6 @@ body.sheet-open { overflow: hidden; }
   display: block; width: 100%; height: 70px; margin: 6px 0; border: 1px solid var(--border); border-radius: 12px;
   padding: 8px; font: .76rem ui-monospace, monospace; background: var(--surface); color: var(--text);
 }
-#bm-iphone-steps ol { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; }
 .bookmarklet {
   display: inline-block; background: var(--accent); color: var(--surface) !important; text-decoration: none;
   padding: 5px 14px; border-radius: 999px; cursor: grab; font-size: .84rem;

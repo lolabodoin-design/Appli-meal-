@@ -4,6 +4,10 @@
 //  Configuration
 // ============================================================
 const STORAGE_KEY = 'menu-proteine-v2';
+// Téléphone ou tablette (écran tactile, pas de souris) : on simplifie certaines pages
+const IS_MOBILE = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+document.documentElement.classList.toggle('is-mobile', IS_MOBILE);
+
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 const DAY_EMOJIS = ['', '', '', '', '', '', '']; // le thème épuré n'affiche plus d'emoji
 
@@ -883,6 +887,13 @@ function driveTerm(id) {
   return product ? `${product.brand} ${product.name}`.trim() : INGREDIENTS[id].search;
 }
 
+// Lien d'un article : la fiche exacte du produit choisi si le stock du Drive a été vérifié,
+// sinon la recherche du produit dans le magasin
+function productUrl(id) {
+  const r = state.stock?.items[id];
+  return r?.statut === 'ok' && r.produit.url ? r.produit.url : searchUrl(driveTerm(id));
+}
+
 function searchUrl(term) {
   const base = driveStoreBase();
   return base
@@ -1315,9 +1326,9 @@ function renderShopping() {
           </label>
           <div class="item-actions">
             ${offLinkable(ing)
-              ? `<button type="button" class="chip-btn ${offOpen.has(id) ? 'active' : ''}" data-off-toggle="${id}">Produits réels</button>`
+              ? `<button type="button" class="chip-btn desktop-only ${offOpen.has(id) ? 'active' : ''}" data-off-toggle="${id}">Produits réels</button>`
               : '<span class="fresh-tag">Produit frais</span>'}
-            <a class="drive-link" href="${esc(searchUrl(driveTerm(id)))}" target="_blank" rel="noopener">Leclerc Drive ↗</a>
+            <a class="drive-link" href="${esc(productUrl(id))}" target="_blank" rel="noopener">Ajouter sur Leclerc ↗</a>
           </div>
           ${offOpen.has(id) ? renderProductPanel(id) : ''}
         </div>`;
@@ -1838,17 +1849,6 @@ function bindEvents() {
     const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(list))));
     const base = driveStoreBase() || DEFAULT_DRIVE_URL;
     window.open(`${base}/recherche.aspx?TexteRecherche=#mp=${encoded}`, '_blank', 'noopener');
-  });
-
-  // Favori pour iPhone : on copie son code, à coller comme adresse d'un signet Safari
-  $('#btn-copy-bm').addEventListener('click', async e => {
-    $('#bm-iphone-steps').hidden = false;
-    try {
-      await navigator.clipboard.writeText(bm.href);
-      e.target.textContent = 'Favori copié ✓';
-    } catch {
-      prompt('Copie ce code :', bm.href);
-    }
   });
 
   $('#btn-copy-drive').addEventListener('click', async e => {
