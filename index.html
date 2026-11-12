@@ -36,6 +36,7 @@
     <section class="page" id="page-semaine">
       <div class="page-actions">
         <button type="button" id="btn-quiz" class="secondary">Nos envies <span id="quiz-count" class="badge"></span></button>
+        <button type="button" id="btn-antigaspi" class="secondary">Anti-gaspi <span id="count-frigo" class="badge"></span></button>
         <button type="button" id="btn-generate" class="primary">Générer notre menu</button>
       </div>
       <p id="notice" class="notice" hidden></p>
@@ -106,6 +107,7 @@
 
     <!-- ============ Page « Anti-gaspi » (fridge.js) ============ -->
     <section class="page" id="page-frigo" hidden>
+      <button type="button" class="link-back" id="btn-frigo-back">← Retour à la semaine</button>
       <div class="card frigo-hero">
         <span class="frigo-kicker">Anti-gaspi</span>
         <h2>Mon frigo</h2>
@@ -198,10 +200,6 @@
     <button type="button" class="nav-item" data-page="courses">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 10V6.5a3 3 0 0 1 6 0V10"/></svg>
       <span>Courses</span><span id="count" class="nav-badge"></span>
-    </button>
-    <button type="button" class="nav-item" data-page="frigo">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="2.5"/><path d="M6 10h12M9 6v2M9 13v3"/></svg>
-      <span>Frigo</span><span id="count-frigo" class="nav-badge"></span>
     </button>
     <button type="button" class="nav-item" data-page="recettes">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10 5 7 4.5 4 5v14c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5zM12 6.5v14"/></svg>

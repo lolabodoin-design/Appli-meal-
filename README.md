@@ -150,7 +150,10 @@ Aucune image à télécharger : léger, hors connexion, cohérent avec le logo e
 - Encart « De saison » : les fruits et légumes du mois dessinés (`produceIcon` dans plates.js),
   en bandeau qui défile, avec un raccourci vers les recettes de saison.
 
-## Anti-gaspi : page « Frigo » (`fridge.js`)
+## Anti-gaspi (`fridge.js`)
+
+Mode **désactivé par défaut** : l'appli fonctionne comme d'habitude. Bouton « Anti-gaspi » sur la page Semaine →
+page Mon frigo ; le frigo n'influence le menu qu'après « Activer : menu anti-gaspi » (bandeau + « Revenir au menu classique »).
 
 - On coche ce qu'il reste à la maison (1 toucher = il en reste, 2 = à finir vite) ; huile, épices, soja, miel
   sont considérés comme toujours au placard.

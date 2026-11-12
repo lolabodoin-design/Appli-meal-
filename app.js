@@ -189,6 +189,7 @@ const DEFAULT_STATE = {
   unavailable: [], // ingrédients en rupture au Drive, écartés à la prochaine génération
   ratings: {},     // avis du foyer sur les recettes : { idRecette: 'love' | 'dislike' }
   fridge: {},      // « Mon frigo » : { ingrédient: 1 (il en reste) | 2 (à finir vite) }
+  antiGaspi: false, // le menu actuel a été calculé en mode anti-gaspi (bouton dédié uniquement)
 };
 
 const RECIPE_BY_ID = Object.fromEntries(RECIPES.map(r => [r.id, r]));
@@ -479,10 +480,12 @@ function seasonOf(recipe) {
 // Plus une recette correspond aux envies, plus elle a de chances d'être tirée
 // ---------- Mon frigo (anti-gaspi) : les recettes qui utilisent ce qu'il reste passent devant.
 // « À finir vite » compte encore plus en début de semaine (lundi → mercredi).
+// Le frigo ne compte QUE si on active le mode anti-gaspi (bouton dédié) : state.antiGaspi
 let fridgeUsed = new Set(); // restes déjà utilisés par un repas du menu en cours de calcul
 let planningDay = 0;
 function fridgeHits(r) {
   let n1 = 0, n2 = 0;
+  if (!state.antiGaspi) return { n1, n2 };
   for (const id of r.ingIds) {
     const v = state.fridge?.[id];
     if (!v || fridgeUsed.has(id)) continue;
@@ -697,9 +700,12 @@ function canPlan(pools) {
   return pools.plat.length > 0;
 }
 
-function generateWeek() {
+// generateWeek() : menu classique · generateWeek({ antiGaspi: true }) : utilise d'abord le frigo
+// (attention : en clic direct, le premier argument est l'événement → menu classique)
+function generateWeek(opts) {
   const pools = recipePools();
   if (!canPlan(pools)) return;
+  state.antiGaspi = opts?.antiGaspi === true && Object.keys(state.fridge || {}).length > 0;
   const usage = {};
   const families = { viande: 0, poisson: 0, vegetal: 0 };
   fridgeUsed = new Set();
@@ -713,8 +719,8 @@ function generateWeek() {
     return { meals };
   });
   state.checked = {};
-  // Ce qu'on a déjà au frigo est coché d'office dans la liste de courses
-  for (const { id } of shoppingList()) if (state.fridge?.[id]) state.checked[id] = true;
+  // Mode anti-gaspi : ce qu'on a déjà au frigo est coché d'office dans la liste de courses
+  if (state.antiGaspi) for (const { id } of shoppingList()) if (state.fridge?.[id]) state.checked[id] = true;
   showNotice('');
   saveState();
   render();
@@ -1337,6 +1343,10 @@ function renderWeek() {
     ${cap && cost > cap ? `<p class="hint warn">Au-dessus de votre budget : régénère la semaine, choisis une tranche plus haute ou le régime végétarien, souvent moins cher.</p>` : ''}`;
   const statsOpen = $('#week-stats')?.open || false;
   $('#week-summary').innerHTML = `
+    ${state.antiGaspi ? `<div class="ag-banner">
+      <span><b>Menu anti-gaspi</b> · tes restes sont utilisés en priorité</span>
+      <button type="button" class="chip-btn" data-ag-off>Revenir au menu classique</button>
+    </div>` : ''}
     <div class="fact-card">
       <span class="fact-icon" aria-hidden="true"></span>
       <p><b>Le savais-tu ?</b> ${esc(currentFact())}</p>
@@ -1420,7 +1430,7 @@ function renderShopping() {
             <span>
               <span class="item-name">${esc(ing.name)}</span><br>
               <span class="item-qty">${esc(buyQuantity(ing, g))} · besoin : ${fmtWeight(g)}</span>
-              ${state.fridge?.[id] ? '<span class="fridge-tag">Dans ton frigo · vérifie qu\'il y en a assez</span>' : ''}
+              ${state.antiGaspi && state.fridge?.[id] ? '<span class="fridge-tag">Dans ton frigo · vérifie qu\'il y en a assez</span>' : ''}
               ${product ? `<span class="item-product">${nutriBadge(product.nutriscore)} ${esc([product.brand, product.name].filter(Boolean).join(' – '))}
                 <button type="button" class="link-btn" data-off-clear="${id}" title="Retirer ce produit">✕</button></span>` : ''}
               ${stockLine(id)}
@@ -1879,6 +1889,11 @@ function bindEvents() {
 
   // Délégation : boutons « changer » et « journée »
   $('#week-summary').addEventListener('click', e => {
+    if (e.target.closest('[data-ag-off]')) {
+      generateWeek();
+      showNotice('Menu classique : le frigo n\'est plus pris en compte.');
+      return;
+    }
     if (e.target.closest('[data-season-go]')) {
       catalogFilter = 'saison';
       renderCatalog();

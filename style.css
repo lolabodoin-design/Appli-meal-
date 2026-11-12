@@ -782,3 +782,9 @@ html.cooking, html.cooking body { overflow: hidden; }
 .gc-ok { font-size: .78rem; color: var(--sage); font-weight: 600; margin-bottom: 10px; }
 .gaspi-card .cook-btn { margin: auto 0 0; }
 .gaspi-count { text-align: center; font-size: .74rem; color: var(--muted); margin: -8px 0 16px; }
+
+.link-back { background: none; border: none; padding: 4px 0; margin: 0 0 10px; color: var(--muted); font-size: .86rem; }
+.link-back:hover { color: var(--accent); }
+.ag-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin: 0 0 16px;
+  padding: 10px 14px; border-radius: var(--radius-sm); background: var(--sage-soft); border: 1px solid color-mix(in srgb, var(--sage) 40%, var(--border)); font-size: .86rem; }
+.ag-banner b { font-weight: 600; color: var(--accent-strong); }

@@ -50,8 +50,7 @@
         + (urgent.length ? `<br>À finir vite : <b>${urgent.map(id => esc(shortName(INGREDIENTS[id]).toLowerCase())).join(', ')}</b>` : '')
       : 'Ton frigo est vide pour l\'instant. Ajoute ce qu\'il te reste : l\'appli s\'en sert pour éviter le gaspillage.';
     el('btn-fridge-edit').textContent = ids.length ? 'Modifier mon frigo' : 'Remplir mon frigo';
-    const badge = el('count-frigo');
-    if (badge) badge.textContent = ids.length || '';
+    el('count-frigo').textContent = ids.length || '';
   }
 
   // ---------- Recettes
@@ -108,8 +107,10 @@
     if (mode === 'restes') {
       const list = finishers();
       box.innerHTML = `
-        <p class="mode-intro">Le menu de la semaine utilise d'abord tes restes, et ce qui est <b>à finir vite</b> dès lundi.</p>
-        <div class="mode-cta"><button type="button" class="primary" id="btn-fridge-go">${state.plan ? 'Régénérer la semaine avec mes restes' : 'Générer le menu avec mes restes'}</button></div>
+        <p class="mode-intro">${state.antiGaspi
+          ? 'Ton menu actuel est déjà en <b>mode anti-gaspi</b>. Tu as changé ton frigo ? Recalcule-le.'
+          : 'Ton menu reste comme d\'habitude tant que tu n\'actives pas ce mode. Une fois activé, il utilise d\'abord tes restes, et ce qui est <b>à finir vite</b> dès lundi.'}</p>
+        <div class="mode-cta"><button type="button" class="primary" id="btn-fridge-go">${state.antiGaspi ? 'Recalculer avec mon frigo' : 'Activer : menu anti-gaspi'}</button></div>
         ${list.length ? `<div class="gaspi-row">${list.map(x => card(x, false)).join('')}</div>
           <p class="gaspi-count">${list.length} idée${list.length > 1 ? 's' : ''} pour finir ton frigo · fais défiler →</p>` : ''}`;
     } else {
@@ -153,7 +154,7 @@
     const seg = e.target.closest('.seg-btn');
     if (seg) { mode = seg.dataset.mode; renderMode(); return; }
     if (e.target.closest('#btn-fridge-go')) {
-      generateWeek();
+      generateWeek({ antiGaspi: true });
       showPage('semaine');
       showNotice('Menu recalculé avec ton frigo : les restes passent en priorité, et ce qui est « à finir vite » arrive en début de semaine.');
     }
@@ -162,7 +163,8 @@
   el('btn-fridge-clear').addEventListener('click', () => { state.fridge = {}; saveState(); render(); });
 
   // Mise à jour quand on arrive sur la page (régimes, avis… ont pu changer)
-  document.querySelectorAll('.nav-item[data-page="frigo"]').forEach(b => b.addEventListener('click', render));
+  el('btn-antigaspi').addEventListener('click', () => { showPage('frigo'); render(); });
+  el('btn-frigo-back').addEventListener('click', () => showPage('semaine'));
   if (!Object.keys(fr()).length) { el('fridge-editor').hidden = false; el('btn-fridge-edit').hidden = true; }
   render();
 })();
