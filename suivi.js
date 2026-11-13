@@ -153,6 +153,69 @@
     renderAll(before !== p.targets.kcal ? `Noté ! Objectif de ${esc(p.name)} : ${p.targets.kcal} kcal par jour (avant : ${before}).` : 'Noté !');
   }
 
+  // ---------- Pas du jour (montre Garmin → app Santé → raccourci iPhone « Pas du jour » → presse-papier)
+  // Une appli web ne peut pas lire l'app Santé : le raccourci copie le nombre de pas, on le colle ici.
+  const SHORTCUT = 'Pas du jour';
+  const STEP_GOAL = 10000;
+  let stepsPending = false; // le raccourci vient d'être lancé : on met « Insérer » en avant
+  const stepsLog = () => (state.stepsLog ||= {});
+  const stepsOf = (pid, key = todayKey()) => stepsLog()[key]?.[pid];
+  const fmtN = n => Math.round(n).toLocaleString('fr-FR');
+
+  function renderSteps(msg = '') {
+    const p = person();
+    const n = stepsOf(p.id);
+    const pct = n ? Math.min(100, Math.round((n / STEP_GOAL) * 100)) : 0;
+    const days = Array.from({ length: 7 }, (_, k) => {
+      const d = new Date(); d.setDate(d.getDate() - (6 - k));
+      const v = stepsOf(p.id, todayKey(d)) || 0;
+      return { label: DAY_SHORT[(d.getDay() + 6) % 7], pct: Math.min(100, Math.round((v / STEP_GOAL) * 100)), v, today: k === 6 };
+    });
+    const ever = Object.values(stepsLog()).some(x => x?.[p.id] != null);
+    el('suivi-steps').innerHTML = `
+      <div class="sv-head">
+        <div><span class="sv-kicker">Pas · aujourd'hui</span>
+          <div class="sv-big"><b>${n != null ? fmtN(n) : '—'}</b> <span>/ ${fmtN(STEP_GOAL)}</span></div></div>
+        <div class="sv-ring steps" style="--p:${pct}"><span>${pct} %</span></div>
+      </div>
+      <div class="sv-actions">
+        <button type="button" class="${stepsPending ? 'ghost' : 'primary'}" data-steps-run>Mettre à jour mes pas</button>
+        <button type="button" class="${stepsPending ? 'primary' : 'ghost'}" data-steps-insert>Insérer</button>
+      </div>
+      ${msg ? `<p class="ph-msg">${msg}</p>` : ''}
+      ${ever ? `<div class="sv-week steps" aria-label="Pas des 7 derniers jours">${days.map(d => `
+        <div class="svw-day ${d.today ? 'today' : ''}" title="${fmtN(d.v)} pas">
+          <div class="svw-bar"><div style="height:${d.pct}%"></div></div><span>${d.label}</span></div>`).join('')}</div>` : ''}
+      <details class="ph-manual"><summary>${ever ? 'Saisir à la main' : 'Configurer (une seule fois)'}</summary>
+        ${ever ? '' : `<ol class="steps-setup">
+          <li>Garmin Connect → Réglages → Apps connectées → <b>Santé</b> : autorise les pas.</li>
+          <li>App <b>Raccourcis</b> → <b>+</b> → nomme-le « ${SHORTCUT} » et ajoute : <b>Rechercher des échantillons de santé</b> (Nombre de pas, date de début : aujourd'hui) → <b>Calculer les statistiques</b> (Somme) → <b>Arrondir le nombre</b> → <b>Copier dans le presse-papiers</b>.</li>
+        </ol>`}
+        <form class="sv-form" id="steps-form">
+          <input type="text" id="steps-input" inputmode="numeric" autocomplete="off" placeholder="Nombre de pas" aria-label="Nombre de pas aujourd'hui">
+          <button type="submit" class="secondary">Enregistrer</button>
+        </form>
+      </details>`;
+  }
+
+  function saveSteps(raw) {
+    const n = parseInt(String(raw || '').replace(/[\s\u00A0\u202F.,]/g, ''), 10);
+    if (!(n >= 0 && n < 200000)) {
+      renderSteps(String(raw || '').trim()
+        ? 'Je ne trouve pas de nombre de pas dans le presse-papier : relance le raccourci.'
+        : 'Le presse-papier est vide : relance le raccourci.');
+      return;
+    }
+    const key = todayKey();
+    stepsLog()[key] ||= {};
+    stepsLog()[key][person().id] = n;
+    const keys = Object.keys(stepsLog()).sort();
+    while (keys.length > 60) delete stepsLog()[keys.shift()];
+    stepsPending = false;
+    saveState();
+    renderSteps();
+  }
+
   // ---------- Analyser mon assiette avec Claude (gratuit : passe par l'appli Claude de l'utilisatrice)
   // 1. l'appli prépare une consigne (repas prévu + format de réponse), la copie et ouvre Claude
   // 2. on y joint la photo ; Claude répond par un bloc JSON
@@ -338,11 +401,22 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
     el('suivi-who').innerHTML = people.map(p =>
       `<button type="button" class="seg-btn" data-who="${p.id}" aria-selected="${p.id === who}">${esc(p.name)}</button>`).join('');
   }
-  function renderAll(msg) { person(); renderPeople(); renderWater(); renderPhoto(); renderWeight(msg); }
+  function renderAll(msg) { person(); renderPeople(); renderWater(); renderSteps(); renderPhoto(); renderWeight(msg); }
 
   page.addEventListener('click', e => {
     const w = e.target.closest('[data-who]');
     if (w) { who = w.dataset.who; photoResult = null; renderAll(); return; }
+    if (e.target.closest('[data-steps-run]')) {
+      stepsPending = true;
+      renderSteps();
+      location.href = `shortcuts://run-shortcut?name=${encodeURIComponent(SHORTCUT)}`;
+      return;
+    }
+    if (e.target.closest('[data-steps-insert]')) {
+      if (!navigator.clipboard?.readText) { renderSteps('Saisis tes pas à la main ci-dessous.'); return; }
+      navigator.clipboard.readText().then(saveSteps, () => renderSteps('Collage refusé : saisis tes pas à la main ci-dessous.'));
+      return;
+    }
     const sl = e.target.closest('[data-ph-slot]');
     if (sl) { photoSlot = sl.dataset.phSlot; photoResult = null; renderPhoto(); return; }
     if (e.target.closest('[data-ph-copy]')) {
@@ -420,6 +494,7 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
     if (e.target.id === 'ph-file' && e.target.files?.[0]) preparePhoto(e.target.files[0]);
   });
   page.addEventListener('submit', e => {
+    if (e.target.id === 'steps-form') { e.preventDefault(); saveSteps(el('steps-input').value); return; }
     if (e.target.id !== 'weight-form') return;
     e.preventDefault();
     const kg = Math.round(parseFloat(String(el('weight-input').value).replace(',', '.')) * 10) / 10;

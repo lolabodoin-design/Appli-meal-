@@ -829,3 +829,7 @@ html.cooking, html.cooking body { overflow: hidden; }
 .ph-manual summary { cursor: pointer; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; list-style: none; }
 .ph-manual summary::-webkit-details-marker { display: none; }
 .ph-manual[open] summary { margin-bottom: 8px; }
+.sv-ring.steps { background: conic-gradient(var(--sage) calc(var(--p) * 1%), var(--surface-2) 0); }
+.sv-week.steps .svw-bar div { background: var(--sage); }
+#suivi-steps .sv-week { margin-top: 6px; }
+.steps-setup { padding-left: 18px; margin: 8px 0 12px; font-size: .84rem; line-height: 1.5; display: grid; gap: 6px; }

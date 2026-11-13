@@ -170,3 +170,6 @@ Sans réponse, le menu est calculé exactement comme d'habitude.
   personne seule (`meal.eaten`), la journée est recalculée ; les repas encore à venir (aujourd'hui : ceux d'après ; jour
   futur : tous les autres ; jour passé : aucun) sont agrandis ou réduits ensemble pour compléter les calories, dans les
   limites de portion. « Annuler » dans la Semaine rétablit le repas prévu. La réponse collée est lue automatiquement.
+- **Pas du jour** : la montre Garmin écrit dans l'app Santé (Garmin Connect → Apps connectées → Santé) ; un raccourci
+  iPhone « Pas du jour » lit les pas du jour et les copie ; « Mettre à jour mes pas » lance le raccourci
+  (`shortcuts://run-shortcut`), « Insérer » colle le nombre. Objectif 10 000 pas, 7 derniers jours, saisie manuelle possible.
