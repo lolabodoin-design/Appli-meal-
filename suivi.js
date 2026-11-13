@@ -186,11 +186,7 @@
       ${ever ? `<div class="sv-week steps" aria-label="Pas des 7 derniers jours">${days.map(d => `
         <div class="svw-day ${d.today ? 'today' : ''}" title="${fmtN(d.v)} pas">
           <div class="svw-bar"><div style="height:${d.pct}%"></div></div><span>${d.label}</span></div>`).join('')}</div>` : ''}
-      <details class="ph-manual"><summary>${ever ? 'Saisir à la main' : 'Configurer (une seule fois)'}</summary>
-        ${ever ? '' : `<ol class="steps-setup">
-          <li>Garmin Connect → Réglages → Apps connectées → <b>Santé</b> : autorise les pas.</li>
-          <li>App <b>Raccourcis</b> → <b>+</b> → nomme-le « ${SHORTCUT} » et ajoute : <b>Rechercher des échantillons de santé</b> (Nombre de pas, date de début : aujourd'hui) → <b>Calculer les statistiques</b> (Somme) → <b>Arrondir le nombre</b> → <b>Copier dans le presse-papiers</b>.</li>
-        </ol>`}
+      <details class="ph-manual"><summary>Saisir à la main</summary>
         <form class="sv-form" id="steps-form">
           <input type="text" id="steps-input" inputmode="numeric" autocomplete="off" placeholder="Nombre de pas" aria-label="Nombre de pas aujourd'hui">
           <button type="submit" class="secondary">Enregistrer</button>
@@ -199,11 +195,12 @@
   }
 
   function saveSteps(raw) {
-    const n = parseInt(String(raw || '').replace(/[\s\u00A0\u202F.,]/g, ''), 10);
+    // Premier nombre du texte : « 8432 », « 8 432 pas », « 8432,0 »…
+    const m = String(raw || '').match(/\d[\d\s\u00A0\u202F]*(?:[.,]\d+)?/);
+    const n = m ? Math.round(parseFloat(m[0].replace(/[\s\u00A0\u202F]/g, '').replace(',', '.'))) : NaN;
     if (!(n >= 0 && n < 200000)) {
-      renderSteps(String(raw || '').trim()
-        ? 'Je ne trouve pas de nombre de pas dans le presse-papier : relance le raccourci.'
-        : 'Le presse-papier est vide : relance le raccourci.');
+      const peek = String(raw || '').trim().slice(0, 50);
+      renderSteps(peek ? `Pas de nombre de pas trouvé (reçu : « ${esc(peek)} »).` : 'Le presse-papier est vide.');
       return;
     }
     const key = todayKey();
