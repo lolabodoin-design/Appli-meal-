@@ -1482,8 +1482,7 @@ function renderShopping() {
   $('#use-real').checked = state.useRealNutrition;
 
   renderStockSummary();
-  $('#checkout').innerHTML = `Estimation en caisse : <b>${euros(checkoutCost())}</b>
-    <small>${state.stock ? 'prix réels du Drive quand ils sont connus' : 'prix indicatifs'} · paquets entiers · hors placard et lignes cochées${budgetCap() ? ` · budget ${budgetCap()} €` : ''}</small>`;
+  $('#checkout').innerHTML = `Estimation en caisse : <b>${euros(checkoutCost())}</b>`;
   const warning = driveStoreBase() ? '' : `<p class="hint warn">Renseigne votre magasin Leclerc Drive dans « Nos préférences » pour que les liens lancent directement la recherche du produit.</p>`;
   $('#shopping').innerHTML = warning + groups.map(({ rayon, items }) => `
     <div class="rayon">
@@ -1665,10 +1664,10 @@ function renderQuiz() {
     `<button type="button" class="dot ${i === quizStep ? 'current' : ''} ${i < quizStep ? 'done' : ''}" data-q-nav="goto-${i}" aria-label="Étape ${i + 1}"></button>`).join('')}</div>`;
   let body;
   if (quizStep === 0) {
-    body = `<h3>Quelle ambiance vous fait envie cette semaine ?</h3><p class="hint">Plusieurs choix possibles. Ces recettes sortiront plus souvent.</p>
+    body = `<h3>Quelle ambiance vous fait envie cette semaine ?</h3><p class="hint">Plusieurs choix possibles.</p>
       <div class="quiz-options">${MOODS.map(([k, e, t, sub]) => quizOption('moods', k, e, t, sub, q.moods.includes(k))).join('')}</div>`;
   } else if (quizStep === 1) {
-    body = `<h3>Des sorties de prévues ?</h3><p class="hint">Resto ou soirée : pas de dîner à cuisiner, et le reste de la journée est rééquilibré. Le lendemain d'une soirée, on vous prépare des plats « récup ».</p>
+    body = `<h3>Des sorties de prévues ?</h3>
       <div class="events">${DAYS.map((day, d) => `
         <div class="event-row"><span class="event-day">${DAY_EMOJIS[d]} ${day} soir</span>
           <div class="seg">${[['', 'Rien'], ['restau', 'Resto'], ['soiree', 'Soirée']].map(([v, l]) =>
@@ -1694,7 +1693,7 @@ function renderQuiz() {
         }).join('')}</div>
       </div>`;
   } else if (quizStep === 4) {
-    body = `<h3>Un aliment à finir en priorité ?</h3><p class="hint">Un reste dans le frigo, un produit qui arrive à date… Le menu l'utilisera dès le début de la semaine. Facultatif.</p>
+    body = `<h3>Un aliment à finir en priorité ?</h3><p class="hint">Facultatif.</p>
       <div class="custom-dislike">
         <div class="custom-row">
           <input type="text" id="finish-input" placeholder="ex. épinards, yaourt grec, courgette…" maxlength="30" autocomplete="off">
@@ -1708,7 +1707,7 @@ function renderQuiz() {
         }).join('')}</div>
       </div>`;
   } else if (quizStep === 5) {
-    body = `<h3>Un petit plaisir ce week-end ?</h3><p class="hint">Burger maison, pizza, fajitas… version protéinée et toujours calée sur vos macros.</p>
+    body = `<h3>Un petit plaisir ce week-end ?</h3>
       <div class="quiz-options">${PLAISIR_OPTIONS.map(([k, e, t, sub]) => quizOption('plaisir', k, e, t, sub, String(q.plaisirDay ?? '') === k)).join('')}</div>`;
   }
   $('#quiz').innerHTML = progress + (quizStep === QUIZ_STEPS ? quizRecap() : `
@@ -1822,7 +1821,7 @@ function personSummary(p) {
 // Ce que l'appli a compris du texte libre « ne mange pas »
 function avoidHint(p) {
   const terms = avoidTerms(p.avoid);
-  if (!terms.length) return 'Allergies, aliments que vous n\'aimez pas… séparés par des virgules.';
+  if (!terms.length) return '';
   const parts = terms.map(t => {
     const ids = ingredientsMatching(t);
     return ids.length
@@ -1847,7 +1846,6 @@ function personForm(p) {
       <label class="field-label">Régime
         <select data-field="regime">${options(Object.entries(REGIMES).map(([k, r]) => [k, r.label]), p.regime)}</select>
       </label>
-      <p class="hint regime-desc">${esc(REGIMES[p.regime].desc)}</p>
 
       <label class="field-label">Ce que ${esc(p.name)} ne mange pas
         <input type="text" data-field="avoid" value="${esc(p.avoid || '')}" maxlength="200" autocomplete="off"
@@ -1887,8 +1885,8 @@ function updateMacroCheck(p) {
   const fromMacros = 4 * (+T.p || 0) + 4 * (+T.c || 0) + 9 * (+T.f || 0);
   const diff = fromMacros - (+T.kcal || 0);
   el.classList.toggle('warn', Math.abs(diff) > 100);
-  el.textContent = `Les macros représentent ${fromMacros} kcal`
-    + (Math.abs(diff) > 100 ? ` : ${diff > 0 ? '+' : ''}${diff} kcal par rapport à l'objectif, pense à ajuster.` : ' : cohérent ✓');
+  el.textContent = Math.abs(diff) > 100
+    ? `Les macros représentent ${fromMacros} kcal : ${diff > 0 ? '+' : ''}${diff} kcal par rapport à l'objectif, pense à ajuster.` : '';
 }
 
 function fillForms() {
@@ -1938,7 +1936,6 @@ function bindEvents() {
       if (state.plan) showNotice(`Aliments à éviter pour ${p.name} modifiés : clique sur « Régénérer » pour les appliquer au menu.`);
     } else if (field === 'regime') {
       p.regime = e.target.value;
-      card.querySelector('.regime-desc').textContent = REGIMES[p.regime].desc;
       if (state.plan) showNotice(`Régime de ${p.name} modifié : clique sur « Régénérer » pour l'appliquer au menu.`);
     } else if (profile) {
       // Changer une mensuration ou l'objectif recalcule les cibles (ajustables ensuite à la main)

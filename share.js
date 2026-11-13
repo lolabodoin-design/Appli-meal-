@@ -154,7 +154,6 @@
     el('btn-share-go').disabled = false;
     el('btn-share-go').hidden = !navigator.share;
     el('share-dl').hidden = mobile;
-    el('share-tip').hidden = !mobile;
   }
   function close() { sheet.hidden = true; }
 

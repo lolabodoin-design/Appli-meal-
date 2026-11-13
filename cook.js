@@ -141,7 +141,6 @@
             <span><b>${servings}</b> portion${servings > 1 ? 's' : ''}</span>
             <button type="button" class="ghost" data-serv="1" aria-label="Une portion de plus">+</button>
           </div>` : ''}
-        <p class="cook-hint">Sors tout ce qu'il faut, touche chaque ingrédient une fois prêt.</p>
         <ul class="cook-ings">${cur.items.map((it, k) => {
           const ing = INGREDIENTS[it.id];
           const parts = it.parts ? `<small>${it.parts.map(p => `${esc(p.name)} ${qty(ing, p.g)}`).join(' · ')}</small>` : '';
@@ -165,7 +164,6 @@
         <div class="cook-end">
           <div class="cook-plate">${plateSVG(cur.recipe)}</div>
           <h3>Bon appétit !</h3>
-          <p class="cook-hint">C'était bon ? Dis-le à l'appli, elle le proposera plus souvent.</p>
           <button type="button" class="rate-btn ${loved ? 'on' : ''}" data-cook-love>${loved ? '♥ On aime' : '♡ J\'aime cette recette'}</button>
         </div>`;
     }

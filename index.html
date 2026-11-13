@@ -66,13 +66,8 @@
           <!-- Comment remplir son panier : simple sur téléphone, tout d'un coup sur ordinateur -->
           <div class="cart-help">
             <h2>Remplir votre panier Leclerc</h2>
-            <div class="mobile-only">
-              <p>Touchez <b>Ajouter sur Leclerc</b> à côté de chaque produit, ajoutez-le à votre panier, puis cochez-le ici.</p>
-              <p class="tip-desktop">Envie de <b>tout ajouter d'un coup</b> ? Ouvrez l'appli sur un <b>ordinateur</b> : un bouton remplit tout votre panier Leclerc en une fois.</p>
-            </div>
             <div class="desktop-only bulk">
               <button type="button" id="btn-open-drive" class="primary">Remplir mon panier Leclerc</button>
-              <p class="hint">Le site Leclerc s'ouvre : cliquez sur <b>Stock Drive</b> dans votre barre de favoris, puis sur <b>Tout mettre dans le panier</b>. Vous validez ensuite la commande vous-même.</p>
               <p class="guide-link"><button type="button" class="link-btn" id="btn-guide">Comment ça marche ?</button></p>
               <details class="mini-fold">
                 <summary>Options avancées</summary>
@@ -116,7 +111,6 @@
     <section class="page" id="page-recettes" hidden>
       <div class="card">
         <h2>Nos recettes</h2>
-        <p class="hint top">Touchez « ♡ J'aime » pour voir une recette revenir plus souvent, ou « Pas pour nous » pour ne plus la voir.</p>
         <input type="text" id="catalog-search" class="search" placeholder="Rechercher une recette ou un ingrédient…" autocomplete="off">
         <div id="catalog-filters" class="filters"></div>
         <div id="catalog" class="catalog"></div>
@@ -128,9 +122,8 @@
       <div class="setup">
         <details class="card fold" id="profil">
           <summary><h2>Le foyer</h2><span class="fold-sum" id="sum-foyer"></span></summary>
-          <p class="hint top">Vous mangez les mêmes recettes, chacun avec ses portions. Si une recette ne convient pas au régime de l'un de vous, il a sa propre variante.</p>
           <div id="people" class="people"></div>
-          <p class="hint" id="people-hint">Remplissez une seule fois puis cliquez sur « Enregistrer ». Les objectifs se recalculent quand vous changez les mensurations ou l'objectif (formule de Mifflin-St Jeor), puis restent ajustables à la main. Protéines par kg de poids de corps : 1,6 g en maintien, 2 g en perte de gras ou en prise de muscle, 2,2 g en recomposition corporelle. Lipides : 27 % des calories ; glucides : le reste.</p>
+          <p class="hint" id="people-hint">Remplissez une seule fois puis touchez « Enregistrer ». Les objectifs restent ajustables à la main.</p>
         </details>
 
         <details class="card fold" id="prefs">
@@ -203,7 +196,6 @@
       </div>
       <p class="hint" id="share-status" aria-live="polite"></p>
       <img id="share-preview" class="share-preview" alt="Aperçu de l'image du menu de la semaine">
-      <p class="hint share-tip" id="share-tip" hidden>Astuce : appuie longuement sur l'image puis « Enregistrer dans Photos ».</p>
       <div class="share-actions">
         <button type="button" id="btn-share-go" class="primary">Partager</button>
         <a id="share-dl" class="secondary btn-link" download="menu-de-la-semaine.png">Enregistrer l'image</a>

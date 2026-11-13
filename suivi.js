@@ -97,7 +97,7 @@
   // ---------- Poids
   function chartSVG(list) {
     const pts = list.slice(-12);
-    if (pts.length < 2) return '<p class="hint sv-empty">La courbe apparaîtra dès ta deuxième pesée.</p>';
+    if (pts.length < 2) return '';
     const W = 300, H = 120, px = 14, py = 16;
     const kgs = pts.map(x => x.kg);
     let lo = Math.min(...kgs), hi = Math.max(...kgs);
@@ -133,8 +133,7 @@
         <input type="text" id="weight-input" inputmode="decimal" autocomplete="off" pattern="[0-9]{2,3}([,.][0-9])?" placeholder="${String(last?.kg ?? p.profile.poids).replace('.', ',')}" required>
         <span class="sv-unit">kg</span>
         <button type="submit" class="secondary">Noter mon poids</button>
-      </form>
-      <p class="hint sv-note">${msg || 'Une pesée par semaine suffit, le matin à jeun. Tes objectifs caloriques s\'ajustent à ton nouveau poids.'}</p>`;
+      </form>`;
   }
 
   function addWeight(kg) {
@@ -179,10 +178,10 @@
         photoFile = new File([b], 'mon-assiette.jpg', { type: 'image/jpeg' });
         if (photoUrl) URL.revokeObjectURL(photoUrl);
         photoUrl = URL.createObjectURL(photoFile);
-        renderPhoto('Photo prête : touche « Envoyer à Claude ».');
+        renderPhoto();
       }, 'image/jpeg', 0.85);
     };
-    img.onerror = () => { photoFile = file; renderPhoto('Photo prête : touche « Envoyer à Claude ».'); };
+    img.onerror = () => { photoFile = file; renderPhoto(); };
     img.src = src;
   }
   const photos = () => (state.photoLog ||= {});
@@ -262,10 +261,8 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
         ${bar('Calories', t.kcal, T?.kcal, 'b-kcal')}${bar('Protéines', t.p, T?.p, 'b-p')}${bar('Glucides', t.c, T?.c, 'b-c')}${bar('Lipides', t.f, T?.f, 'b-f')}
         ${res.aliments.length ? `<ul class="ph-list">${res.aliments.map(a => `<li><span>${esc(a.nom)}</span><small>${a.g} g · ${a.kcal} kcal</small></li>`).join('')}</ul>` : ''}
         ${res.conseil ? `<p class="ph-tip">${esc(res.conseil)}</p>` : ''}
-        <p class="hint">Estimation sur photo${res.confiance ? ` · confiance ${esc(res.confiance)}` : ''} : à prendre comme un ordre de grandeur.</p>
         ${state.plan ? `<div class="ph-replace">
           <b>Tu n'as pas mangé le repas prévu ?</b>
-          <p class="hint">Remplace-le par cette photo : ta journée est recalculée et tes repas suivants sont ajustés pour tenir tes objectifs.</p>
           <div class="ph-replace-row">
             <select id="ph-day" aria-label="Jour">${DAYS.map((n, k) => `<option value="${k}" ${k === todayIndex ? 'selected' : ''}>${k === todayIndex ? 'Aujourd\'hui' : k === todayIndex - 1 ? 'Hier' : n}</option>`).join('')}</select>
             <select id="ph-slot" aria-label="Repas">${SLOT_ORDER.map(k => `<option value="${k}" ${k === photoSlot ? 'selected' : ''}>${SLOTS[k].label}</option>`).join('')}</select>
@@ -292,11 +289,9 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
             ${photoFile ? 'Reprendre la photo' : 'Prendre la photo'}</label>
           ${photoUrl ? `<img class="ph-thumb" src="${photoUrl}" alt="Photo de l'assiette">` : ''}</li>
         <li><button type="button" class="primary small" data-ph-send ${photoFile ? '' : 'disabled'}>Envoyer à Claude</button>
-          <small>Dans le menu de partage, choisis <b>Claude</b> : la photo et la demande sont déjà dedans, il ne reste qu'à envoyer.
-            <button type="button" class="link-btn ph-alt" data-ph-copy>Sans photo ici ? Copier seulement la demande et ouvrir Claude</button></small></li>
-        <li><span>Quand Claude a répondu : appui long sur sa réponse → <b>Copier</b>, puis :</span>
+</li>
+        <li><span>Copie la réponse de Claude, puis :</span>
           <button type="button" class="primary small ph-insert" data-ph-insert>Insérer la réponse de Claude</button>
-          <small>L'iPhone affiche une bulle « Coller » : touche-la, le résultat apparaît.</small>
           <details class="ph-manual"><summary>Ça ne marche pas ? Coller à la main</summary>
             <textarea id="ph-in" rows="3" placeholder="Touche ici, puis Coller"></textarea>
             <button type="button" class="chip-btn ph-read" data-ph-read>Lire la réponse</button>
@@ -333,7 +328,7 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
     const keys = Object.keys(photos()).sort();
     while (keys.length > 60) delete photos()[keys.shift()];
     saveState();
-    renderPhoto('Analyse enregistrée.');
+    renderPhoto();
   }
 
   // ---------- Page
@@ -353,7 +348,7 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
     if (e.target.closest('[data-ph-copy]')) {
       // Copie puis ouverture dans le même geste (sinon Safari bloque l'un ou l'autre)
       const text = buildPrompt();
-      const done = () => renderPhoto('Consigne copiée ! Dans Claude : colle-la, ajoute ta photo, envoie.');
+      const done = () => renderPhoto();
       navigator.clipboard?.writeText(text).then(done, () => { el('ph-in') && (el('ph-in').value = text); renderPhoto('Copie impossible : la consigne est dans la case ci-dessous, copie-la à la main.'); el('ph-in').value = text; });
       window.open(CLAUDE_URL, '_blank', 'noopener');
       return;
@@ -366,10 +361,12 @@ Réponds UNIQUEMENT avec ce bloc JSON (nombres sans unités, pas de texte autour
       const data = { files: [photoFile], text };
       if (navigator.canShare && navigator.canShare(data)) {
         navigator.share(data).then(
-          () => renderPhoto('Envoyé ! Dans Claude, appuie sur Envoyer. Si la demande n\'apparaît pas, colle-la (elle est copiée).'),
+          () => renderPhoto(),
           err => { if (err.name !== 'AbortError') renderPhoto(`Le partage n'a pas abouti (${err.name}). Essaie « Copier seulement la demande ».`); });
       } else {
-        renderPhoto('Ce navigateur ne sait pas partager une photo : utilise « Copier seulement la demande et ouvrir Claude », puis ajoute la photo dans Claude.');
+        navigator.clipboard?.writeText(text).catch(() => {});
+        window.open(CLAUDE_URL, '_blank', 'noopener');
+        renderPhoto('Demande copiée : dans Claude, colle-la et ajoute ta photo.');
       }
       return;
     }
